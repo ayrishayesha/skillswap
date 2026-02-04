@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:my_app/basic_info.dart';
+import 'package:my_app/home_page.dart';
 import 'package:my_app/splashscreen/splash_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 //import 'package:my_app/signup_page.dart';
@@ -13,7 +15,7 @@ void main() async {
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
-  runApp(MaterialApp(debugShowCheckedModeBanner: false, home: SplashScreen()));
+  runApp(MaterialApp(debugShowCheckedModeBanner: false, home: splashscreen()));
 }
 
 class splashscreen extends StatefulWidget {
@@ -53,11 +55,7 @@ class _SplashscreenState extends State<splashscreen> {
                 borderRadius: BorderRadius.circular(16),
               ),
 
-              // child: const Icon(
-              //   Icons.school,
-              //   color: Colors.white,
-              //   size: 60,
-              // ),
+              child: const Icon(Icons.school, color: Colors.white, size: 60),
             ),
 
             const SizedBox(height: 25),

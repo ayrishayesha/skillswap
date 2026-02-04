@@ -3,14 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_app/Home_page.dart';
 import 'package:my_app/auth/signup_screen.dart';
 
-/// ---------- STRONG PASSWORD CHECK ----------
-// bool isStrongPassword(String password) {
-//   final regex = RegExp(
-//     r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$',
-//   );
-//   return regex.hasMatch(password);
-// }
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -19,49 +11,19 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+
   final email = TextEditingController();
   final password = TextEditingController();
 
   bool loading = false;
-  bool isPasswordHidden = true; // 👁 password toggle
+  bool isPasswordHidden = true;
 
   final supabase = Supabase.instance.client;
 
   /// ---------- LOGIN FUNCTION ----------
   login() async {
-    // 2️⃣ Email required
-    if (email.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Email is required'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // 3️⃣ Password required
-    if (password.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password is required'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // if (!isStrongPassword(password.text)) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(
-    //       backgroundColor: Colors.red,
-    //       content: Text(
-    //         'Password must be at least 8 characters and include uppercase, lowercase, number & special character',
-    //       ),
-    //     ),
-    //   );
-    //   return;
-    // }
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       loading = true;
@@ -83,7 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      ).showSnackBar(SnackBar(content: Text("Login failed: ${e.toString()}")));
     } finally {
       setState(() {
         loading = false;
@@ -99,162 +61,166 @@ class _LoginScreenState extends State<LoginScreen> {
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 40),
+            child: Form(
+              key: _formKey, // ✅ Form key added
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 40),
 
-                /// Logo & title
-                Center(
-                  child: Column(
-                    children: const [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundColor: Color(0xFFE9E7F5),
-                        child: Icon(
-                          Icons.school,
-                          size: 40,
-                          color: Color(0xFF2D1383),
+                  /// Logo & title
+                  Center(
+                    child: Column(
+                      children: const [
+                        CircleAvatar(
+                          radius: 40,
+                          backgroundColor: Color(0xFFE9E7F5),
+                          child: Icon(
+                            Icons.school,
+                            size: 40,
+                            color: Color(0xFF2D1383),
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 12),
-                      Text(
-                        "SkillSwap",
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
+                        SizedBox(height: 12),
+                        Text(
+                          "SkillSwap",
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
+                        SizedBox(height: 6),
+                        Text(
+                          "Log in to start swapping skills.",
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  /// Email
+                  const Text(
+                    "Email",
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 6),
+                  TextFormField(
+                    controller: email,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return "Email is required";
+                      }
+                      return null;
+                    },
+                    decoration: InputDecoration(
+                      hintText: "student@university.edu",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      SizedBox(height: 6),
-                      Text(
-                        "Log in to start swapping skills.",
-                        style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  /// Password
+                  const Text(
+                    "Password",
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 6),
+                  TextFormField(
+                    controller: password,
+                    obscureText: isPasswordHidden,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return "Password is required";
+                      }
+                      return null;
+                    },
+                    decoration: InputDecoration(
+                      hintText: "********",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          isPasswordHidden
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            isPasswordHidden = !isPasswordHidden;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  TextButton(
+                    onPressed: () {},
+                    child: const Text("Forgot password?"),
+                  ),
+
+                  const SizedBox(height: 25),
+
+                  /// Login button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: loading
+                        ? const Center(child: CircularProgressIndicator())
+                        : ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2D1383),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: login,
+                            child: const Text(
+                              "Log in",
+                              style: TextStyle(
+                                color: Color.fromARGB(255, 249, 249, 249),
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  /// Sign up
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Don't have an account? "),
+                      InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SignupScreen(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          "Sign up",
+                          style: TextStyle(
+                            color: Color(0xFF2D1383),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                ),
-
-                const SizedBox(height: 40),
-
-                /// Email
-                const Text(
-                  "Email",
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: email,
-                  decoration: InputDecoration(
-                    hintText: "student@university.edu",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  "Use your university email",
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-
-                const SizedBox(height: 20),
-
-                /// Password
-                const Text(
-                  "Password",
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: password,
-                  obscureText: isPasswordHidden, // 👁 toggle here
-                  decoration: InputDecoration(
-                    hintText: "********",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        isPasswordHidden
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          isPasswordHidden = !isPasswordHidden;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                TextButton(onPressed: () {}, child: Text("Forgot password? ")),
-
-                // Align(
-                //   alignment: Alignment.centerRight,
-                //   child: Text(
-                //     "Forgot Password?",
-                //     style: TextStyle(
-                //       color: Color(0xFF2D1383),
-                //       fontWeight: FontWeight.w500,
-                //     ),
-                //   ),
-                // ),
-                const SizedBox(height: 25),
-
-                /// Login button
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: loading
-                      ? const Center(child: CircularProgressIndicator())
-                      : ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2D1383),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: login,
-                          child: const Text(
-                            "Log in",
-                            style: TextStyle(
-                              color: Color.fromARGB(255, 249, 249, 249),
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                ),
-
-                const SizedBox(height: 30),
-
-                /// Sign up
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text("Don't have an account? "),
-                    InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const SignupScreen(),
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        "Sign up",
-                        style: TextStyle(
-                          color: Color(0xFF2D1383),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
