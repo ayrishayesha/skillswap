@@ -4,6 +4,13 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
+        <intent-filter android:autoVerify="true">
+    <action android:name="android.intent.action.VIEW" />
+    <category android:name="android.intent.category.DEFAULT" />
+    <category android:name="android.intent.category.BROWSABLE" />
+    <data android:scheme="myapp" android:host="resetpassword" />
+</intent-filter>
+
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
@@ -39,7 +46,9 @@
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
-            <data android:mimeType="text/plain"/>
+          <data
+    android:scheme="myapp"
+    android:host="reset-password"/>
         </intent>
     </queries>
 </manifest>

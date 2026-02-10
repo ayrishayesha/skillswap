@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:my_app/basic_info.dart';
-import 'package:my_app/home_page.dart';
-import 'package:my_app/splashscreen/splash_screen.dart';
+import 'package:my_app/auth/forgot_password_screen.dart';
+import 'package:my_app/auth/reset_password_screen.dart';
+import 'package:my_app/learner/learner_homepage.dart';
+import 'package:my_app/page/showcase_skills.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-//import 'package:my_app/signup_page.dart';
 import 'dart:async';
 
 import 'auth/login_screen.dart';
@@ -18,6 +18,7 @@ void main() async {
   runApp(MaterialApp(debugShowCheckedModeBanner: false, home: splashscreen()));
 }
 
+// ignore: camel_case_types
 class splashscreen extends StatefulWidget {
   const splashscreen({super.key});
 
@@ -61,7 +62,7 @@ class _SplashscreenState extends State<splashscreen> {
             const SizedBox(height: 25),
 
             const Text(
-              "LU SkillSwap",
+              "LU QuickHelp",
               style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
             ),
 

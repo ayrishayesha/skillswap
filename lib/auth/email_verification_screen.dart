@@ -1,91 +1,206 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../Home_page.dart';
 
 class EmailVerificationScreen extends StatefulWidget {
   final String email;
-  const EmailVerificationScreen({super.key, required this.email});
+  final String fullName;
+
+  const EmailVerificationScreen({
+    super.key,
+    required this.email,
+    required this.fullName,
+  });
 
   @override
   State<EmailVerificationScreen> createState() =>
       _EmailVerificationScreenState();
 }
 
-class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
+class _EmailVerificationScreenState extends State<EmailVerificationScreen>
+    with WidgetsBindingObserver {
   final supabase = Supabase.instance.client;
-  bool loading = false;
 
-  checkVerification() async {
-    setState(() => loading = true);
+  bool checking = false;
+  bool verified = false;
 
-    await supabase.auth.refreshSession();
-    final user = supabase.auth.currentUser;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
-    if (user != null && user.emailConfirmedAt != null) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => HomePage()),
-        (route) => false,
-      );
-    } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Email not verified yet")));
-    }
-
-    setState(() => loading = false);
+    // Run once when page opens
+    _checkVerificationSilently();
   }
 
-  resendEmail() async {
-    await supabase.auth.resend(type: OtpType.signup, email: widget.email);
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text("Verification email sent")));
+  // This triggers when user returns to the app after verifying via email link
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkVerificationSilently();
+    }
+  }
+
+  Future<void> _checkVerificationSilently() async {
+    if (checking) return;
+
+    setState(() => checking = true);
+
+    try {
+      await supabase.auth.refreshSession();
+      final user = supabase.auth.currentUser;
+
+      if (user != null && user.emailConfirmedAt != null) {
+        verified = true;
+
+        // ✅ Save full_name into profiles table
+        await supabase.from('profiles').upsert({
+          'id': user.id,
+          'full_name': widget.fullName.trim(),
+          'updated_at': DateTime.now().toIso8601String(),
+        }, onConflict: 'id');
+
+        if (!mounted) return;
+
+        // ✅ After verification, send user back to login
+        // If your login is a specific page, replace this with:
+        // Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginPage()), (r) => false);
+        Navigator.pop(context);
+      }
+    } catch (_) {
+      // Don’t show errors here (silent check),
+      // because user is just waiting / might not be verified yet.
+    } finally {
+      if (mounted) setState(() => checking = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.email, size: 80, color: Colors.deepPurple),
-            const SizedBox(height: 20),
-
-            const Text(
-              "Verify your university email to continue",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 12),
-
-            Text(
-              "We’ve sent a verification link to\n${widget.email}",
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.grey),
-            ),
-
-            const SizedBox(height: 30),
-
-            ElevatedButton(
-              onPressed: resendEmail,
-              child: const Text("Send Verification Email"),
-            ),
-
-            const SizedBox(height: 15),
-
-            loading
-                ? const CircularProgressIndicator()
-                : OutlinedButton(
-                    onPressed: checkVerification,
-                    child: const Text("I have verified"),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 96,
+                    height: 96,
+                    decoration: BoxDecoration(
+                      color: Colors.deepPurple.withOpacity(0.10),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.mark_email_unread_rounded,
+                      size: 52,
+                      color: Colors.deepPurple,
+                    ),
                   ),
-          ],
+                  const SizedBox(height: 22),
+
+                  const Text(
+                    "Verify your university email",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 10),
+
+                  const Text(
+                    "Go to your email and confirm the verification link to continue.",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.black54,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.alternate_email,
+                          color: Colors.deepPurple,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            widget.email,
+                            style: const TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.deepPurple.withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.deepPurple.withOpacity(0.15),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.info_outline,
+                          color: Colors.deepPurple,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            checking
+                                ? "Waiting for verification... (This page will update automatically when you return to the app)"
+                                : "After clicking the verification link in your email, you will be redirected to the login page. Then, log in using your email and password.",
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.black87,
+                              height: 1.35,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  if (checking) const CircularProgressIndicator(),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
