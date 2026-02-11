@@ -97,6 +97,7 @@ class _ShowcaseSkillsPageState extends State<ShowcaseSkillsPage> {
     }
 
     final user = supabase.auth.currentUser;
+
     if (user == null) {
       ScaffoldMessenger.of(
         context,
@@ -109,39 +110,52 @@ class _ShowcaseSkillsPageState extends State<ShowcaseSkillsPage> {
     try {
       final role = helpOthers ? "helper" : "learner";
 
-      // 1) Update profiles: role + open_for_requests + updated_at
+      // ✅ UPDATE PROFILE + SAVE SKILLS TEXT ARRAY
       await supabase.from('profiles').upsert({
         'id': user.id,
         'role': role,
         'open_for_requests': helpOthers,
+        'skills': selectedSkills, // 👈 MAIN FIX
         'updated_at': DateTime.now().toIso8601String(),
       }, onConflict: 'id');
 
-      // 2) Convert selected skill names -> UUID ids
-      final skillRows = await supabase
-          .from('skills')
-          .select('id,name')
-          .inFilter('name', selectedSkills);
+      List<int> skillIds = [];
 
-      final skillIds = (skillRows as List)
-          .map((e) => e['id'].toString()) // ✅ UUID safe
-          .toList();
+      // Existing logic (UNCHANGED)
+      for (String skill in selectedSkills) {
+        final existing = await supabase
+            .from('skills')
+            .select('id')
+            .eq('name', skill)
+            .maybeSingle();
 
-      // 3) Delete old skills for this user
+        int skillId;
+
+        if (existing == null) {
+          final inserted = await supabase
+              .from('skills')
+              .insert({'name': skill})
+              .select('id')
+              .single();
+
+          skillId = inserted['id'] as int;
+        } else {
+          skillId = existing['id'] as int;
+        }
+
+        skillIds.add(skillId);
+      }
+
       await supabase.from('profile_skills').delete().eq('profile_id', user.id);
 
-      // 4) Insert new skills
-      if (skillIds.isNotEmpty) {
-        final inserts = skillIds
-            .map((sid) => {'profile_id': user.id, 'skill_id': sid})
-            .toList();
+      final inserts = skillIds.map((id) {
+        return {'profile_id': user.id, 'skill_id': id};
+      }).toList();
 
-        await supabase.from('profile_skills').insert(inserts);
-      }
+      await supabase.from('profile_skills').insert(inserts);
 
       if (!mounted) return;
 
-      // 5) Navigate
       if (role == "learner") {
         Navigator.pushReplacement(
           context,
@@ -373,12 +387,3 @@ class _ShowcaseSkillsPageState extends State<ShowcaseSkillsPage> {
     );
   }
 }
-
-// class LearnerHomePlaceholder extends StatelessWidget {
-//   const LearnerHomePlaceholder({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return const Scaffold(body: Center(child: Text("Learner Home Page")));
-//   }
-// }

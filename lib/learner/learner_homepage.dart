@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/helper/helper_details_page.dart';
+import 'package:my_app/learner/notification_page.dart';
 import 'package:my_app/page/chats_page.dart';
 import 'package:my_app/page/profile_page.dart';
 import 'package:my_app/page/requests_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:my_app/helper/all_helper_view_page.dart';
 
 class LearnerHome extends StatefulWidget {
   const LearnerHome({super.key});
@@ -15,10 +18,12 @@ class _LearnerHomeState extends State<LearnerHome> {
   final supabase = Supabase.instance.client;
 
   int currentIndex = 0;
-  bool showAllHelpers = false;
 
   List helpers = [];
   List allHelpers = [];
+
+  String selectedFilter = "All";
+  TextEditingController searchController = TextEditingController();
 
   @override
   void initState() {
@@ -35,14 +40,41 @@ class _LearnerHomeState extends State<LearnerHome> {
 
     setState(() {
       allHelpers = data;
-      helpers = data.take(4).toList(); // default only 4
+      helpers = data;
     });
   }
 
-  void viewAll() {
+  void applyFilter() {
+    List filtered = allHelpers;
+
+    // Filter by chip
+    if (selectedFilter != "All") {
+      filtered = filtered.where((h) {
+        final skills = (h['skills'] as List?) ?? [];
+        return skills.any(
+          (s) => s.toString().toLowerCase() == selectedFilter.toLowerCase(),
+        );
+      }).toList();
+    }
+
+    // Search by name OR skill
+    if (searchController.text.isNotEmpty) {
+      final query = searchController.text.toLowerCase();
+
+      filtered = filtered.where((h) {
+        final name = (h['full_name'] ?? '').toString().toLowerCase();
+        final skills = (h['skills'] as List?) ?? [];
+
+        final skillMatch = skills.any(
+          (s) => s.toString().toLowerCase().contains(query),
+        );
+
+        return name.contains(query) || skillMatch;
+      }).toList();
+    }
+
     setState(() {
-      showAllHelpers = true;
-      helpers = allHelpers;
+      helpers = filtered;
     });
   }
 
@@ -50,7 +82,6 @@ class _LearnerHomeState extends State<LearnerHome> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xffF6F7FB),
-
       body: IndexedStack(
         index: currentIndex,
         children: [
@@ -60,7 +91,6 @@ class _LearnerHomeState extends State<LearnerHome> {
           const ProfilePage(),
         ],
       ),
-
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
         selectedItemColor: Colors.blue,
@@ -86,216 +116,327 @@ class _LearnerHomeState extends State<LearnerHome> {
     );
   }
 
-  // ================= HOME SCREEN =================
+  // ================= HOME =================
 
   Widget homeScreen() {
-    return Scaffold(
-      backgroundColor: const Color(0xffF6F7FB),
-
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          "SkillSwap",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 16),
-            child: Icon(Icons.notifications_none, color: Colors.black),
-          ),
-        ],
-      ),
-
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+    return SafeArea(
+      child: Column(
         children: [
-          /// SEARCH
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+          /// APP BAR
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "SkillSwap",
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.notifications_none),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const NotificationPage(),
+                          ),
+                        );
+                      },
+                    ),
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            child: const TextField(
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                icon: Icon(Icons.search),
-                hintText: "Search Python, DSA, DBMS...",
+          ),
+
+          /// SEARCH
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: TextField(
+                controller: searchController,
+                onChanged: (value) {
+                  applyFilter();
+                },
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  icon: Icon(Icons.search),
+                  hintText: "Search Python, DSA, DBMS...",
+                ),
               ),
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
-          /// FILTER
-          Row(
-            children: [
-              filterChip("All", true),
-              filterChip("Python", false, Colors.yellow),
-              filterChip("DSA", false, Colors.purple),
-              filterChip("DBMS", false, Colors.orange),
-            ],
+          /// FILTER CHIPS
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                filterChip("All"),
+                filterChip("Python"),
+                filterChip("DSA"),
+                filterChip("DBMS"),
+              ],
+            ),
           ),
 
           const SizedBox(height: 20),
 
-          /// TOP HELPERS
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                "Top Helpers",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              if (!showAllHelpers)
+          /// TOP HELPERS TITLE
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Top Helpers",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
                 GestureDetector(
-                  onTap: viewAll,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AllHelpersPage(helpers: helpers),
+                      ),
+                    );
+                  },
                   child: const Text(
                     "View all",
                     style: TextStyle(color: Colors.blue),
                   ),
                 ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: helpers.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 0.7, // slightly shorter cards
+              ],
             ),
-            itemBuilder: (_, i) => helperCard(helpers[i]),
-          ),
-
-          const SizedBox(height: 20),
-
-          const Text(
-            "Recently Active",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 12),
 
-          recentTile("Mike T.", "DBMS", true),
-          recentTile("Emily R.", "OS Design", false),
-          recentTile("John D.", "ReactJS", false),
+          /// HORIZONTAL HELPERS
+          SizedBox(
+            height: 290,
+            child: helpers.isEmpty
+                ? const Center(child: Text("No helpers found"))
+                : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.only(left: 16),
+                    itemCount: helpers.length,
+                    itemBuilder: (context, i) {
+                      return SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.45,
+                        child: helperCard(helpers[i]),
+                      );
+                    },
+                  ),
+          ),
+
+          const SizedBox(height: 12),
+
+          /// RECENTLY ACTIVE
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                const Text(
+                  "Recently Active",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                recentTile("Mike T.", "DBMS", true),
+                recentTile("Emily R.", "OS Design", false),
+                recentTile("John D.", "ReactJS", false),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // ================= UI PARTS =================
+  // ================= COMPONENTS =================
 
-  Widget filterChip(String text, bool active, [Color? dotColor]) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: active ? Colors.blue : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(color: active ? Colors.white : Colors.black),
+  Widget filterChip(String text) {
+    final bool active = selectedFilter == text;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          selectedFilter = text;
+        });
+        applyFilter();
+      },
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: active ? Colors.blue : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(color: active ? Colors.white : Colors.black),
+        ),
       ),
     );
   }
 
   Widget helperCard(Map h) {
-    final batch = (h['batch'] != null && h['batch'].toString().isNotEmpty)
-        ? h['batch']
-        : "Null";
+    final batch = h['batch']?.toString() ?? '';
+    final skills = (h['skills'] as List?)?.join(", ") ?? "No skills";
 
-    final skills = (h['skills'] != null && h['skills'].toString().isNotEmpty)
-        ? h['skills'].toString()
-        : "No skills";
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 8,
-      ), // less padding
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          CircleAvatar(
-            radius: 30, // slightly smaller
-            backgroundColor: Colors.grey.shade200,
-            child:
-                h['avatar_url'] != null && h['avatar_url'].toString().isNotEmpty
-                ? ClipOval(
-                    child: Image.network(
-                      h['avatar_url'],
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                : const Icon(Icons.person, size: 30),
-          ),
-
-          const SizedBox(height: 6), // reduced
-
-          Text(
-            h['full_name'] ?? '',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            textAlign: TextAlign.center,
-          ),
-
-          const SizedBox(height: 2), // reduced
-
-          Text(
-            "${h['department'] ?? ''} · Batch $batch",
-            style: const TextStyle(fontSize: 11, color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-
-          const SizedBox(height: 2), // reduced
-
-          Text(
-            "Skills: $skills",
-            style: const TextStyle(fontSize: 11, color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-
-          const SizedBox(height: 6), // reduced
-
-          SizedBox(
-            width: double.infinity,
-            height: 28, // reduced button height
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.zero, // removes extra padding
-                textStyle: const TextStyle(fontSize: 12),
-              ),
-              onPressed: () {},
-              child: const Text("Request"),
+    return Padding(
+      padding: const EdgeInsets.only(right: 14),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade200,
+              blurRadius: 10,
+              spreadRadius: 2,
             ),
-          ),
-        ],
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            /// Avatar + Rating
+            InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                // Only card area (not button) navigates to details
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => HelperDetailsPage(helperId: h['id']),
+                  ),
+                );
+              },
+              child: Column(
+                children: [
+                  Stack(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [Colors.blue, Colors.purple],
+                          ),
+                        ),
+                        child: CircleAvatar(
+                          radius: 38,
+                          backgroundColor: Colors.white,
+                          child: CircleAvatar(
+                            radius: 34,
+                            backgroundImage:
+                                h['avatar_url'] != null &&
+                                    h['avatar_url'].toString().isNotEmpty
+                                ? NetworkImage(h['avatar_url'])
+                                : null,
+                            child:
+                                h['avatar_url'] == null ||
+                                    h['avatar_url'].toString().isEmpty
+                                ? const Icon(Icons.person, size: 30)
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    h['full_name'] ?? '',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "${h['department']} · Year $batch",
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      skills,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // ================= BUTTON =================
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  // Only button click → Request action
+                  print("Send request to helper ${h['id']}");
+                  // Tumaar request logic ekhane add korte paro
+                },
+                child: const Text(
+                  "Request",
+                  style: TextStyle(color: Color.fromARGB(249, 255, 255, 255)),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget recentTile(String name, String skill, bool online) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 8,
-      ), // reduced
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -326,31 +467,15 @@ class _LearnerHomeState extends State<LearnerHome> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
+                Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
                 Text(
                   "Helping with $skill",
-                  style: const TextStyle(fontSize: 11),
+                  style: const TextStyle(fontSize: 12),
                 ),
               ],
             ),
           ),
-          SizedBox(
-            height: 28, // smaller button
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                textStyle: const TextStyle(fontSize: 12),
-              ),
-              onPressed: () {},
-              child: const Text("Request"),
-            ),
-          ),
+          ElevatedButton(onPressed: () {}, child: const Text("Request")),
         ],
       ),
     );
