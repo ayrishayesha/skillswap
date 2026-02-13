@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/auth/login_screen.dart';
+import 'package:my_app/learner/learner_homepage.dart';
 import 'package:my_app/learner/profile/edit_profile.dart';
 import 'package:my_app/learner/profile/edit_skill.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -104,6 +105,19 @@ class _LearnerProfilePageState extends State<LearnerProfilePage> {
           "My Profile",
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () {
+            // Navigate to Learner Home Page
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    const LearnerHome(), // <-- replace with your LearnerHome widget
+              ),
+            );
+          },
+        ),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -116,7 +130,7 @@ class _LearnerProfilePageState extends State<LearnerProfilePage> {
               child: Column(
                 children: [
                   CircleAvatar(
-                    radius: 55,
+                    radius: 40,
                     backgroundColor: Colors.grey.shade200,
                     backgroundImage: profile?['avatar_url'] != null
                         ? NetworkImage(profile!['avatar_url'])
@@ -133,7 +147,7 @@ class _LearnerProfilePageState extends State<LearnerProfilePage> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 10),
                   Text(
                     "${profile?['department'] ?? ''}, Batch ${profile?['batch'] ?? ''}",
                     style: const TextStyle(color: Colors.grey, fontSize: 15),
