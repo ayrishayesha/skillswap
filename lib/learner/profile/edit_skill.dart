@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/helper/helper_home_page.dart';
 import 'package:my_app/learner/learner_homepage.dart';
-
 import 'package:my_app/helper/helper_home_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // Supabase client
 final supabase = Supabase.instance.client;
 
-class ShowcaseSkillsPage extends StatefulWidget {
-  const ShowcaseSkillsPage({super.key});
+class EditSkillpage extends StatefulWidget {
+  const EditSkillpage({super.key});
 
   @override
-  State<ShowcaseSkillsPage> createState() => _ShowcaseSkillsPageState();
+  State<EditSkillpage> createState() => _EditSkillpageState();
 }
 
-class _ShowcaseSkillsPageState extends State<ShowcaseSkillsPage> {
+class _EditSkillpageState extends State<EditSkillpage> {
   final List<String> suggestedSkills = const [
     "Python",
     "Java",

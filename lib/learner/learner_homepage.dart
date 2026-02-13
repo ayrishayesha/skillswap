@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/helper/helper_details_page.dart';
 import 'package:my_app/learner/notification_page.dart';
+import 'package:my_app/learner/profile/edit_profile.dart';
+import 'package:my_app/learner/profile/learner_profile%20_page.dart';
+import 'package:my_app/page/basic_info.dart';
 import 'package:my_app/page/chats_page.dart';
-import 'package:my_app/page/profile_page.dart';
+
 import 'package:my_app/page/requests_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_app/helper/all_helper_view_page.dart';
@@ -88,7 +91,7 @@ class _LearnerHomeState extends State<LearnerHome> {
           homeScreen(),
           const RequestsPage(),
           const ChatsPage(),
-          const ProfilePage(),
+          const LearnerProfilePage(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -174,9 +177,30 @@ class _LearnerHomeState extends State<LearnerHome> {
               ),
               child: TextField(
                 controller: searchController,
-                onChanged: (value) {
-                  applyFilter();
+                onSubmitted: (value) {
+                  final query = value.toLowerCase();
+
+                  final filtered = allHelpers.where((h) {
+                    final name = (h['full_name'] ?? '')
+                        .toString()
+                        .toLowerCase();
+                    final skills = (h['skills'] as List?) ?? [];
+
+                    final skillMatch = skills.any(
+                      (s) => s.toString().toLowerCase().contains(query),
+                    );
+
+                    return name.contains(query) || skillMatch;
+                  }).toList();
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AllHelpersPage(helpers: filtered),
+                    ),
+                  );
                 },
+
                 decoration: const InputDecoration(
                   border: InputBorder.none,
                   icon: Icon(Icons.search),
