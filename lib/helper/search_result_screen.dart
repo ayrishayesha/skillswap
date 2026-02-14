@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/helper/helper_details_page.dart';
+import 'package:my_app/helper/helper_details_screen.dart';
 
 class SearchResultPage extends StatefulWidget {
   final List allHelpers;

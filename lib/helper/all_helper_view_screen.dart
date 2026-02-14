@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/helper/helper_details_page.dart';
+import 'package:my_app/helper/helper_details_screen.dart';
 
 class AllHelpersPage extends StatelessWidget {
   final List helpers;
@@ -159,25 +159,6 @@ class HelperCard extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          /// ========== SKILLS ==========
-          // if (skills.isNotEmpty)
-          //   Wrap(
-          //     spacing: 8,
-          //     runSpacing: 8,
-          //     children: skills.map((s) {
-          //       return Container(
-          //         padding: const EdgeInsets.symmetric(
-          //           horizontal: 10,
-          //           vertical: 4,
-          //         ),
-          //         decoration: BoxDecoration(
-          //           color: Colors.deepPurple.shade50,
-          //           borderRadius: BorderRadius.circular(12),
-          //         ),
-          //         child: Text(s, style: const TextStyle(fontSize: 12)),
-          //       );
-          //     }).toList(),
-          //   ),
           const SizedBox(height: 12),
 
           /// ========== BUTTONS ==========

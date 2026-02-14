@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/learner/learner_homepage.dart';
-import 'package:my_app/helper/helper_home_page.dart';
+import 'package:my_app/learner/learner_home_screen.dart';
+import 'package:my_app/helper/helper_home_screen.dart';
 import 'package:my_app/learner/profile/learner_profile%20_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -23,7 +23,7 @@ class _EditSkillpageState extends State<EditSkillpage> {
     "OS",
     "OOP",
     "Algorithms",
-    "Web Development",
+    // "Web Development",
     "Machine Learning",
   ];
 
@@ -239,7 +239,7 @@ class _EditSkillpageState extends State<EditSkillpage> {
                   return ChoiceChip(
                     label: Text(skill),
                     selected: isSelected,
-                    selectedColor: Colors.deepPurple,
+                    // selectedColor: Colors.deepPurple,
                     backgroundColor: Colors.grey.shade100,
                     labelStyle: TextStyle(
                       color: isSelected ? Colors.white : Colors.black,
@@ -280,7 +280,7 @@ class _EditSkillpageState extends State<EditSkillpage> {
                       skill,
                       style: const TextStyle(color: Colors.white),
                     ),
-                    backgroundColor: Colors.blue,
+                    backgroundColor: const Color.fromARGB(255, 81, 117, 227),
                     deleteIcon: const Icon(Icons.close, color: Colors.white),
                     onDeleted: () => _toggleSkill(skill),
                   );
@@ -328,7 +328,7 @@ class _EditSkillpageState extends State<EditSkillpage> {
               height: 60,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
+                  backgroundColor: const Color.fromARGB(255, 81, 117, 227),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
                   ),

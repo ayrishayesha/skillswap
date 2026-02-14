@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/page/basic_info.dart';
+import 'package:my_app/screen/basic_info_screen.dart';
 import 'package:my_app/splashscreen/splash_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

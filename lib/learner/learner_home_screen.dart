@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/helper/helper_details_page.dart';
-import 'package:my_app/learner/notification_page.dart';
+import 'package:my_app/helper/helper_details_screen.dart';
+import 'package:my_app/learner/notification_screen.dart';
 import 'package:my_app/learner/profile/learner_profile%20_page.dart';
-import 'package:my_app/page/chats_page.dart';
+import 'package:my_app/screen/chats_screen.dart';
 
-import 'package:my_app/page/requests_page.dart';
+import 'package:my_app/screen/requests_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:my_app/helper/all_helper_view_page.dart';
+import 'package:my_app/helper/all_helper_view_screen.dart';
 
 class LearnerHome extends StatefulWidget {
   const LearnerHome({super.key});

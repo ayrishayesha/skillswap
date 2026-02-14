@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/page/showcase_skills.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+// import 'package:my_app/showcase_skills.dart';
+import 'package:my_app/screen/showcase_skills.dart';
 
-class Helper_Home_Page extends StatefulWidget {
-  const Helper_Home_Page({super.key});
+class HelperAdminHome extends StatefulWidget {
+  const HelperAdminHome({super.key});
 
   @override
-  State<Helper_Home_Page> createState() => _Helper_Home_PageState();
+  State<HelperAdminHome> createState() => _HelperAdminHomeState();
 }
 
-class _Helper_Home_PageState extends State<Helper_Home_Page>
+class _HelperAdminHomeState extends State<HelperAdminHome>
     with SingleTickerProviderStateMixin {
   final supabase = Supabase.instance.client;
 

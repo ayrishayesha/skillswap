@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/helper/helper_home_page.dart';
-import 'package:my_app/learner/learner_homepage.dart';
+import 'package:my_app/helper/helper_home_screen.dart';
+import 'package:my_app/learner/learner_home_screen.dart';
 import 'package:my_app/splashscreen/splash_screen.dart';
 
-import 'package:my_app/helper/helper_home_page.dart';
+import 'package:my_app/helper/helper_home_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // Supabase client
@@ -167,7 +167,7 @@ class _ShowcaseSkillsPageState extends State<ShowcaseSkillsPage> {
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const Helper_Home_Page()),
+          MaterialPageRoute(builder: (_) => const HelperAdminHome()),
         );
       }
       if (!mounted) return;

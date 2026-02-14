@@ -234,7 +234,7 @@ class _EditProfileState extends State<EditProfile> {
                   buildField(emailController, readOnly: true),
                   const SizedBox(height: 20),
                   buildLabel("BATCH"),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 5),
                   buildField(batchController, isNumber: true),
                   const SizedBox(height: 30),
                   SizedBox(
@@ -243,7 +243,12 @@ class _EditProfileState extends State<EditProfile> {
                     child: ElevatedButton(
                       onPressed: loading ? null : submitData,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xff3563E9),
+                        backgroundColor: const Color.fromARGB(
+                          255,
+                          81,
+                          117,
+                          227,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(18),
                         ),
@@ -256,7 +261,7 @@ class _EditProfileState extends State<EditProfile> {
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                     ),

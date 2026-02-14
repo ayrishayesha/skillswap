@@ -3,8 +3,8 @@ import 'package:my_app/learner/profile/edit_profile.dart';
 
 import 'package:my_app/learner/profile/edit_skill.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:my_app/helper/helper_home_page.dart';
-import 'package:my_app/learner/learner_homepage.dart';
+import 'package:my_app/helper/helper_home_screen.dart';
+import 'package:my_app/learner/learner_home_screen.dart';
 import 'package:my_app/auth/login_screen.dart';
 
 class Learner_Profile_Page extends StatefulWidget {
@@ -128,10 +128,10 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
         body: loading
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(10),
                 child: Column(
                   children: [
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 5),
 
                     // ---------------- AVATAR ----------------
                     CircleAvatar(
@@ -144,7 +144,7 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
                           : null,
                     ),
 
-                    const SizedBox(height: 15),
+                    const SizedBox(height: 5),
 
                     Text(
                       name,
@@ -158,10 +158,12 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
 
                     Text(
                       "$dept, $batch Batch",
-                      style: const TextStyle(color: Colors.grey),
+                      style: const TextStyle(
+                        color: Color.fromARGB(255, 100, 98, 98),
+                      ),
                     ),
 
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 5),
 
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -182,18 +184,51 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
                       ),
                     ),
 
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 10),
 
                     // ---------------- RATING ----------------
                     Row(
                       children: [
-                        buildBox("4.9 ⭐", "Rating"),
-                        const SizedBox(width: 15),
-                        buildBox("24", "Sessions"),
+                        Expanded(
+                          child: buildBox(
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  rating.toString(),
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.star,
+                                  color: Colors.amber,
+                                  size: 18,
+                                ),
+                              ],
+                            ),
+                            "RATING",
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: buildBox(
+                            Text(
+                              sessions.toString(),
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            "SESSIONS",
+                          ),
+                        ),
                       ],
                     ),
 
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 20),
 
                     // ---------------- SKILLS ----------------
                     const Align(
@@ -207,7 +242,7 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
                       ),
                     ),
 
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 5),
 
                     Wrap(
                       spacing: 10,
@@ -217,7 +252,7 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
                       }).toList(),
                     ),
 
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 30),
 
                     // ---------------- BUTTONS ----------------
                     Row(
@@ -278,13 +313,23 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
                     SizedBox(
                       width: double.infinity,
                       height: 55,
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.logout, color: Colors.red),
-                        label: const Text(
-                          "Log Out",
-                          style: TextStyle(color: Colors.red),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xfffdeaea), // soft red
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(color: Colors.red.shade200),
                         ),
-                        onPressed: logout,
+                        child: TextButton.icon(
+                          icon: const Icon(Icons.logout, color: Colors.red),
+                          label: const Text(
+                            "Log Out",
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          onPressed: logout,
+                        ),
                       ),
                     ),
                   ],
@@ -295,22 +340,23 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
   }
 
   // ---------------- WIDGETS ----------------
-  Widget buildBox(String value, String title) {
+  Widget buildBox(Widget valueWidget, String title) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: Colors.grey.shade300),
         ),
         child: Column(
           children: [
+            valueWidget,
+            const SizedBox(height: 4),
             Text(
-              value,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              title,
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
-            const SizedBox(height: 5),
-            Text(title),
           ],
         ),
       ),
