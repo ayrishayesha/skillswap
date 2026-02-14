@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/helper/helper_home_page.dart';
 import 'package:my_app/learner/learner_homepage.dart';
+import 'package:my_app/splashscreen/splash_screen.dart';
 
 import 'package:my_app/helper/helper_home_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -169,6 +170,14 @@ class _ShowcaseSkillsPageState extends State<ShowcaseSkillsPage> {
           MaterialPageRoute(builder: (_) => const Helper_Home_Page()),
         );
       }
+      if (!mounted) return;
+
+      // ✅ DIRECT SPLASH PAGE (NO CONDITION)
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const SplashScreen()),
+        (route) => false,
+      );
     } catch (e) {
       ScaffoldMessenger.of(
         context,

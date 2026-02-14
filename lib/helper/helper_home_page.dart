@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/page/showcase_skills.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:my_app/showcase_skills.dart';
 
 class Helper_Home_Page extends StatefulWidget {
   const Helper_Home_Page({super.key});

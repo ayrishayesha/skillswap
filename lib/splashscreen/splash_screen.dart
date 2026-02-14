@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart ';
-import 'package:my_app/Home_page.dart';
+import 'package:flutter/material.dart';
 import 'package:my_app/auth/login_screen.dart';
+import 'package:my_app/learner/learner_homepage.dart';
+import 'package:my_app/helper/helper_home_page.dart';
+import 'package:my_app/page/basic_info.dart'; // 👈 Add import for BasicInfoScreen
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -13,29 +15,71 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   final supabase = Supabase.instance.client;
 
-  nextscreen() async {
-    await Future.delayed(Duration(seconds: 5)); //ai part ta login part dekaibo
-    if (supabase.auth.currentSession == null) {
-      //jokon user login login nai tokon aita kaj
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => LoginScreen()),
-      );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          //replashment use kori karon amra cai j backbutton na takuk jodi push ditam taile back button cole ashto tokon abck e jawar option cole asto
-          builder: (context) => HomePage(),
-        ),
-      );
-    }
+  @override
+  void initState() {
+    super.initState();
+    _nextScreen();
   }
 
-  void initState() {
-    //aita tokon kaj korbe jokon amra ai screen er upr takbo then aita theke uprer aita te  jabe then if else kaj korbe
-    nextscreen();
-    super.initState();
+  Future<void> _nextScreen() async {
+    await Future.delayed(const Duration(seconds: 3));
+
+    final session = supabase.auth.currentSession;
+
+    // ❌ Not logged in → LoginScreen
+    if (session == null) {
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+      return;
+    }
+
+    final user = supabase.auth.currentUser;
+
+    try {
+      final profile = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user!.id)
+          .maybeSingle();
+
+      if (!mounted) return;
+
+      // ✅ NEW USER → profile null → go to BasicInfoScreen
+      if (profile == null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const BasicInfo()),
+        );
+        return;
+      }
+
+      final role = profile['role'];
+
+      // ✅ HELPER
+      if (role == "helper") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const Helper_Home_Page()),
+        );
+      }
+      // ✅ LEARNER
+      else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LearnerHome()),
+        );
+      }
+    } catch (e) {
+      // ❌ If any error → fallback LearnerHome
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LearnerHome()),
+      );
+    }
   }
 
   @override
@@ -45,7 +89,6 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo box
             Container(
               height: 120,
               width: 120,
@@ -53,19 +96,14 @@ class _SplashScreenState extends State<SplashScreen> {
                 color: const Color.fromARGB(255, 45, 19, 131),
                 borderRadius: BorderRadius.circular(16),
               ),
-
               child: const Icon(Icons.school, color: Colors.white, size: 60),
             ),
-
             const SizedBox(height: 25),
-
             const Text(
               "LU SkillSwap",
               style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
             ),
-
             const SizedBox(height: 30),
-
             const CircularProgressIndicator(),
           ],
         ),

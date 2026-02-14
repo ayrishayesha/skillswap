@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/helper/helper_details_page.dart';
 import 'package:my_app/learner/notification_page.dart';
-import 'package:my_app/learner/profile/edit_profile.dart';
 import 'package:my_app/learner/profile/learner_profile%20_page.dart';
-import 'package:my_app/page/basic_info.dart';
 import 'package:my_app/page/chats_page.dart';
 
 import 'package:my_app/page/requests_page.dart';
@@ -91,7 +89,7 @@ class _LearnerHomeState extends State<LearnerHome> {
           homeScreen(),
           const RequestsPage(),
           const ChatsPage(),
-          const LearnerProfilePage(),
+          const Learner_Profile_Page(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(

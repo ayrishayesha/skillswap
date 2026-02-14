@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/page/basic_info.dart';
+import 'package:my_app/splashscreen/splash_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:my_app/Home_page.dart';
+
 import 'package:my_app/auth/signup_screen.dart';
 import 'package:my_app/auth/forgot_password_screen.dart';
 
@@ -37,9 +39,10 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (result.user != null && result.session != null) {
+        // ✅ CHANGE: login success → go to SplashScreen
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => HomePage()),
+          MaterialPageRoute(builder: (_) => const SplashScreen()),
           (route) => false,
         );
       }
@@ -63,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Form(
-              key: _formKey, // ✅ Form key added
+              key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

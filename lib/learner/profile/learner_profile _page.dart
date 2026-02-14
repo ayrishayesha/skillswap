@@ -1,330 +1,331 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/auth/login_screen.dart';
-import 'package:my_app/learner/learner_homepage.dart';
 import 'package:my_app/learner/profile/edit_profile.dart';
+
 import 'package:my_app/learner/profile/edit_skill.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:my_app/helper/helper_home_page.dart';
+import 'package:my_app/learner/learner_homepage.dart';
 import 'package:my_app/auth/login_screen.dart';
 
-class LearnerProfilePage extends StatefulWidget {
-  const LearnerProfilePage({super.key});
+class Learner_Profile_Page extends StatefulWidget {
+  const Learner_Profile_Page({super.key});
 
   @override
-  State<LearnerProfilePage> createState() => _LearnerProfilePageState();
+  State<Learner_Profile_Page> createState() => _Learner_Profile_PageState();
 }
 
-class _LearnerProfilePageState extends State<LearnerProfilePage> {
+class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
   final supabase = Supabase.instance.client;
 
-  Map<String, dynamic>? profile;
   bool loading = true;
+
+  String name = "";
+  String dept = "";
+  int batch = 0;
+  String avatar = "";
+  List skills = [];
+
+  double rating = 4.9;
+  int sessions = 24;
+
+  bool helper = true;
 
   @override
   void initState() {
     super.initState();
-    fetchProfile();
+    loadProfile();
   }
 
-  Future<void> fetchProfile() async {
-    final user = supabase.auth.currentUser;
-    if (user == null) return;
-
+  // ---------------- LOAD DATA ----------------
+  Future<void> loadProfile() async {
     try {
-      final data = await supabase
+      final user = supabase.auth.currentUser;
+
+      if (user == null) return;
+
+      final res = await supabase
           .from('profiles')
           .select()
           .eq('id', user.id)
-          .maybeSingle();
+          .single();
 
-      if (mounted) {
-        setState(() {
-          profile = data;
-          loading = false;
-        });
-      }
+      setState(() {
+        name = res['full_name'] ?? "";
+        dept = res['department'] ?? "";
+        batch = res['batch'] ?? 0;
+        avatar = res['avatar_url'] ?? "";
+        skills = res['skills'] ?? [];
+        helper = res['open_for_requests'] ?? true;
+      });
     } catch (e) {
-      debugPrint("Profile error: $e");
-      if (mounted) setState(() => loading = false);
+      debugPrint(e.toString());
     }
+
+    setState(() => loading = false);
   }
 
-  Future<void> toggleAvailability(bool value) async {
+  // ---------------- UPDATE ROLE ----------------
+  Future<void> updateRole(bool value) async {
     final user = supabase.auth.currentUser;
+
     if (user == null) return;
 
-    try {
-      await supabase
-          .from('profiles')
-          .update({'open_for_requests': value})
-          .eq('id', user.id);
+    final role = value ? "helper" : "learner";
 
-      if (mounted) {
-        setState(() {
-          profile?['open_for_requests'] = value;
-        });
-      }
-    } catch (e) {
-      debugPrint("Toggle error: $e");
-    }
+    await supabase
+        .from('profiles')
+        .update({'open_for_requests': value, 'role': role})
+        .eq('id', user.id);
+
+    setState(() => helper = value);
   }
 
-  /// ===== LOGOUT WITH REDIRECT =====
+  // ---------------- LOGOUT ----------------
   Future<void> logout() async {
     await supabase.auth.signOut();
 
-    if (mounted) {
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
+  // ---------------- BACK NAVIGATION ----------------
+  void goBack() {
+    if (helper) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) =>
-              const LoginScreen(), // <-- replace with your login widget
-        ),
+        MaterialPageRoute(builder: (_) => const Helper_Home_Page()),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LearnerHome()),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    if (profile == null) {
-      return const Scaffold(body: Center(child: Text("Profile not found")));
-    }
-
-    final skills = List<String>.from(profile?['skills'] ?? []);
-
-    return Scaffold(
-      backgroundColor: const Color(0xfff4f5f7),
-      appBar: AppBar(
+    return WillPopScope(
+      onWillPop: () async {
+        goBack();
+        return false;
+      },
+      child: Scaffold(
         backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        title: const Text(
-          "My Profile",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        appBar: AppBar(
+          title: const Text("My Profile"),
+          centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: goBack,
+          ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {
-            // Navigate to Learner Home Page
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) =>
-                    const LearnerHome(), // <-- replace with your LearnerHome widget
-              ),
-            );
-          },
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            /// ===== PROFILE HEADER =====
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 30),
-              color: Colors.white,
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundColor: Colors.grey.shade200,
-                    backgroundImage: profile?['avatar_url'] != null
-                        ? NetworkImage(profile!['avatar_url'])
-                        : null,
-                    child: profile?['avatar_url'] == null
-                        ? const Icon(Icons.person, size: 40)
-                        : null,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    profile?['full_name'] ?? '',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    "${profile?['department'] ?? ''}, Batch ${profile?['batch'] ?? ''}",
-                    style: const TextStyle(color: Colors.grey, fontSize: 15),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 15),
-
-            /// ===== EXPERTISE SECTION =====
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start, // LEFT ALIGN
-                children: [
-                  const Text(
-                    "Expertise",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 15),
-
-                  skills.isEmpty
-                      ? const Text("No skills added")
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: skills
-                              .map(
-                                (skill) => Container(
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 15,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(skill),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 15),
-
-            /// ===== EDIT BUTTONS =====
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: buildButton(
-                      icon: Icons.edit,
-                      text: "Edit Profile",
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const EditProfile(),
-                          ),
-                        ).then((_) => fetchProfile());
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 15),
-                  Expanded(
-                    child: buildButton(
-                      icon: Icons.settings,
-                      text: "Edit Skills",
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const EditSkillpage(),
-                          ),
-                        ).then((_) => fetchProfile());
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            /// ===== TOGGLE =====
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Row(
+        body: loading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
                   children: [
-                    const Icon(Icons.volunteer_activism, color: Colors.blue),
-                    const SizedBox(width: 10),
-                    const Expanded(
-                      child: Text(
-                        "Available to Help Others",
-                        style: TextStyle(fontWeight: FontWeight.w500),
+                    const SizedBox(height: 20),
+
+                    // ---------------- AVATAR ----------------
+                    CircleAvatar(
+                      radius: 55,
+                      backgroundImage: avatar.isNotEmpty
+                          ? NetworkImage(avatar)
+                          : null,
+                      child: avatar.isEmpty
+                          ? const Icon(Icons.person, size: 50)
+                          : null,
+                    ),
+
+                    const SizedBox(height: 15),
+
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Switch(
-                      value: profile?['open_for_requests'] ?? false,
-                      onChanged: toggleAvailability,
+
+                    const SizedBox(height: 5),
+
+                    Text(
+                      "$dept, $batch Batch",
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.school, size: 18),
+                          SizedBox(width: 5),
+                          Text("Leading University"),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 25),
+
+                    // ---------------- RATING ----------------
+                    Row(
+                      children: [
+                        buildBox("4.9 ⭐", "Rating"),
+                        const SizedBox(width: 15),
+                        buildBox("24", "Sessions"),
+                      ],
+                    ),
+
+                    const SizedBox(height: 25),
+
+                    // ---------------- SKILLS ----------------
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        "Expertise",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: skills.map<Widget>((e) {
+                        return Chip(label: Text(e.toString()));
+                      }).toList(),
+                    ),
+
+                    const SizedBox(height: 25),
+
+                    // ---------------- BUTTONS ----------------
+                    Row(
+                      children: [
+                        Expanded(
+                          child: buildBtn("Edit Profile", Icons.edit, () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const EditProfile(),
+                              ),
+                            ).then((_) => loadProfile());
+                          }),
+                        ),
+                        const SizedBox(width: 15),
+                        Expanded(
+                          child: buildBtn("Edit Skills", Icons.settings, () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const EditSkillpage(),
+                              ),
+                            ).then((_) => loadProfile());
+                          }),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 25),
+
+                    // ---------------- SWITCH ----------------
+                    Container(
+                      padding: const EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              "Available to Help Others",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          Switch(
+                            value: helper,
+                            activeColor: Colors.deepPurple,
+                            onChanged: (v) => updateRole(v),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 25),
+
+                    // ---------------- LOGOUT ----------------
+                    SizedBox(
+                      width: double.infinity,
+                      height: 55,
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.logout, color: Colors.red),
+                        label: const Text(
+                          "Log Out",
+                          style: TextStyle(color: Colors.red),
+                        ),
+                        onPressed: logout,
+                      ),
                     ),
                   ],
                 ),
               ),
+      ),
+    );
+  }
+
+  // ---------------- WIDGETS ----------------
+  Widget buildBox(String value, String title) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
-
-            const SizedBox(height: 20),
-
-            /// ===== LOGOUT =====
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: GestureDetector(
-                onTap: logout,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.logout, color: Colors.red),
-                      SizedBox(width: 10),
-                      Text(
-                        "Log Out",
-                        style: TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
+            const SizedBox(height: 5),
+            Text(title),
           ],
         ),
       ),
     );
   }
 
-  Widget buildButton({
-    required IconData icon,
-    required String text,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 15),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon),
-            const SizedBox(width: 8),
-            Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
-          ],
-        ),
+  Widget buildBtn(String text, IconData icon, VoidCallback onTap) {
+    return ElevatedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon),
+      label: Text(text),
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        backgroundColor: Colors.grey.shade100,
+        foregroundColor: Colors.black,
       ),
     );
   }

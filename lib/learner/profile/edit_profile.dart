@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:my_app/learner/profile/learner_profile%20_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:my_app/page/showcase_skills.dart';
 
 class EditProfile extends StatefulWidget {
   const EditProfile({super.key});
@@ -22,6 +22,8 @@ class _EditProfileState extends State<EditProfile> {
   Uint8List? imageBytes;
   XFile? pickedFile;
 
+  String? existingAvatarUrl;
+
   bool loading = false;
   bool loadingUserInfo = true;
 
@@ -40,7 +42,7 @@ class _EditProfileState extends State<EditProfile> {
 
       final res = await supabase
           .from('profiles')
-          .select('full_name, department, batch')
+          .select('full_name, department, batch, avatar_url')
           .eq('id', user.id)
           .maybeSingle();
 
@@ -48,6 +50,7 @@ class _EditProfileState extends State<EditProfile> {
         nameController.text = res['full_name'] ?? '';
         deptController.text = res['department'] ?? '';
         batchController.text = res['batch']?.toString() ?? '';
+        existingAvatarUrl = res['avatar_url'];
       }
     } catch (e) {
       debugPrint("Load error: $e");
@@ -93,7 +96,16 @@ class _EditProfileState extends State<EditProfile> {
       final user = supabase.auth.currentUser;
       if (user == null) throw "User not logged in";
 
-      final imageUrl = await uploadImage();
+      String? imageUrl;
+      if (pickedFile != null) {
+        imageUrl = await uploadImage();
+      }
+
+      final existingProfile = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', user.id)
+          .maybeSingle();
 
       await supabase.from('profiles').upsert({
         'id': user.id,
@@ -101,16 +113,29 @@ class _EditProfileState extends State<EditProfile> {
         'full_name': nameController.text.trim(),
         'department': deptController.text.trim(),
         'batch': int.tryParse(batchController.text.trim()),
-        'avatar_url': imageUrl,
+        'avatar_url': imageUrl ?? existingProfile?['avatar_url'],
         'updated_at': DateTime.now().toIso8601String(),
       }, onConflict: 'id');
 
       if (!mounted) return;
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const ShowcaseSkillsPage()),
+      // <-- NEW: Show success SnackBar
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Profile updated successfully!"),
+          backgroundColor: Color(0xff3563E9),
+          duration: Duration(seconds: 2),
+        ),
       );
+
+      // <-- NEW: Navigate back to Profile page after save
+      Future.delayed(const Duration(seconds: 2), () {
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const Learner_Profile_Page()),
+        );
+      });
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -149,9 +174,7 @@ class _EditProfileState extends State<EditProfile> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  const SizedBox(height: 25),
-
-                  /// PROFILE IMAGE
+                  const SizedBox(height: 20),
                   Stack(
                     children: [
                       CircleAvatar(
@@ -159,8 +182,11 @@ class _EditProfileState extends State<EditProfile> {
                         backgroundColor: Colors.orange.shade200,
                         backgroundImage: imageBytes != null
                             ? MemoryImage(imageBytes!)
-                            : null,
-                        child: imageBytes == null
+                            : (existingAvatarUrl != null
+                                  ? NetworkImage(existingAvatarUrl!)
+                                        as ImageProvider
+                                  : null),
+                        child: (imageBytes == null && existingAvatarUrl == null)
                             ? const Icon(
                                 Icons.person,
                                 size: 60,
@@ -186,9 +212,7 @@ class _EditProfileState extends State<EditProfile> {
                       ),
                     ],
                   ),
-
-                  const SizedBox(height: 15),
-
+                  const SizedBox(height: 10),
                   const Text(
                     "Change Photo",
                     style: TextStyle(
@@ -196,33 +220,23 @@ class _EditProfileState extends State<EditProfile> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-
-                  const SizedBox(height: 30),
-
+                  const SizedBox(height: 18),
                   buildLabel("FULL NAME"),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 5),
                   buildField(nameController),
-
-                  const SizedBox(height: 20),
-
+                  const SizedBox(height: 18),
                   buildLabel("DEPARTMENT"),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 5),
                   buildField(deptController),
-
-                  const SizedBox(height: 20),
-
+                  const SizedBox(height: 18),
                   buildLabel("EMAIL"),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 5),
                   buildField(emailController, readOnly: true),
-
                   const SizedBox(height: 20),
-
                   buildLabel("BATCH"),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 18),
                   buildField(batchController, isNumber: true),
-
-                  const SizedBox(height: 40),
-
+                  const SizedBox(height: 30),
                   SizedBox(
                     width: double.infinity,
                     height: 55,
@@ -240,14 +254,14 @@ class _EditProfileState extends State<EditProfile> {
                           : const Text(
                               "Save Changes",
                               style: TextStyle(
+                                color: Colors.white,
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                     ),
                   ),
-
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),

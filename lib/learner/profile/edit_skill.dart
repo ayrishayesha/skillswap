@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/learner/learner_homepage.dart';
 import 'package:my_app/helper/helper_home_page.dart';
+import 'package:my_app/learner/profile/learner_profile%20_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// Supabase client
 final supabase = Supabase.instance.client;
 
 class EditSkillpage extends StatefulWidget {
@@ -23,17 +23,17 @@ class _EditSkillpageState extends State<EditSkillpage> {
     "OS",
     "OOP",
     "Algorithms",
+    "Web Development",
+    "Machine Learning",
   ];
 
   final List<String> selectedSkills = [];
 
-  // switch: true => helper, false => learner
   bool helpOthers = true;
 
   final TextEditingController searchCtrl = TextEditingController();
   List<String> searchResults = [];
   bool searching = false;
-
   bool saving = false;
 
   @override
@@ -49,6 +49,7 @@ class _EditSkillpageState extends State<EditSkillpage> {
     super.dispose();
   }
 
+  /// ---------------- SEARCH SKILLS ----------------
   Future<void> _onSearchChanged() async {
     final q = searchCtrl.text.trim();
     if (q.isEmpty) {
@@ -72,7 +73,6 @@ class _EditSkillpageState extends State<EditSkillpage> {
 
       if (mounted) setState(() => searchResults = names);
     } catch (_) {
-      // ignore
     } finally {
       if (mounted) setState(() => searching = false);
     }
@@ -88,6 +88,7 @@ class _EditSkillpageState extends State<EditSkillpage> {
     });
   }
 
+  /// ---------------- SAVE SKILLS ----------------
   Future<void> _finish() async {
     if (selectedSkills.isEmpty) {
       ScaffoldMessenger.of(
@@ -110,18 +111,16 @@ class _EditSkillpageState extends State<EditSkillpage> {
     try {
       final role = helpOthers ? "helper" : "learner";
 
-      // ✅ UPDATE PROFILE + SAVE SKILLS TEXT ARRAY
       await supabase.from('profiles').upsert({
         'id': user.id,
         'role': role,
         'open_for_requests': helpOthers,
-        'skills': selectedSkills, // 👈 MAIN FIX
+        'skills': selectedSkills,
         'updated_at': DateTime.now().toIso8601String(),
       }, onConflict: 'id');
 
       List<int> skillIds = [];
 
-      // Existing logic (UNCHANGED)
       for (String skill in selectedSkills) {
         final existing = await supabase
             .from('skills')
@@ -156,6 +155,15 @@ class _EditSkillpageState extends State<EditSkillpage> {
 
       if (!mounted) return;
 
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Successfully updated your skills"),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      await Future.delayed(const Duration(seconds: 1));
+
       if (role == "learner") {
         Navigator.pushReplacement(
           context,
@@ -164,7 +172,7 @@ class _EditSkillpageState extends State<EditSkillpage> {
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const Helper_Home_Page()),
+          MaterialPageRoute(builder: (_) => const Learner_Profile_Page()),
         );
       }
     } catch (e) {
@@ -183,205 +191,156 @@ class _EditSkillpageState extends State<EditSkillpage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: true,
         leading: const BackButton(color: Colors.black),
+        title: const Text(
+          "Edit Skills",
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+        ),
       ),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Column(
-                          children: [
-                            const Text(
-                              "STEP 2 OF 2",
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 6,
-                                  decoration: BoxDecoration(
-                                    color: Colors.deepPurple.shade200,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  width: 40,
-                                  height: 6,
-                                  decoration: BoxDecoration(
-                                    color: Colors.deepPurple,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      const Text(
-                        "Showcase your\nexpertise",
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        "Select the skills you can share with peers to\nstart building your profile.",
-                        style: TextStyle(fontSize: 15, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 25),
-
-                      TextField(
-                        controller: searchCtrl,
-                        decoration: InputDecoration(
-                          hintText: "Search skills (e.g. Python)...",
-                          prefixIcon: const Icon(Icons.search),
-                          filled: true,
-                          fillColor: Colors.grey.shade100,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      if (searching)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 6),
-                          child: Text(
-                            "Searching...",
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
-
-                      if (searchResults.isNotEmpty) ...[
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: searchResults.map((skill) {
-                            final isSelected = selectedSkills.contains(skill);
-                            return ChoiceChip(
-                              label: Text(skill),
-                              selected: isSelected,
-                              selectedColor: Colors.deepPurple,
-                              backgroundColor: Colors.grey.shade100,
-                              labelStyle: TextStyle(
-                                color: isSelected ? Colors.white : Colors.black,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              onSelected: (_) => _toggleSkill(skill),
-                            );
-                          }).toList(),
-                        ),
-                        const SizedBox(height: 18),
-                      ],
-
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: suggestedSkills.map((skill) {
-                          final isSelected = selectedSkills.contains(skill);
-                          return ChoiceChip(
-                            label: Text(skill),
-                            selected: isSelected,
-                            selectedColor: Colors.deepPurple,
-                            backgroundColor: Colors.grey.shade100,
-                            labelStyle: TextStyle(
-                              color: isSelected ? Colors.white : Colors.black,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            onSelected: (_) => _toggleSkill(skill),
-                          );
-                        }).toList(),
-                      ),
-
-                      const SizedBox(height: 30),
-
-                      Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Row(
-                          children: [
-                            const Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "I want to help others",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    "Open your profile for peer requests",
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Switch(
-                              value: helpOthers,
-                              activeColor: Colors.deepPurple,
-                              onChanged: (v) => setState(() => helpOthers = v),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const Spacer(),
-
-                      SizedBox(
-                        width: double.infinity,
-                        height: 60,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.deepPurple,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                          ),
-                          onPressed: saving ? null : _finish,
-                          child: Text(
-                            saving ? "Saving..." : "Finish",
-                            style: const TextStyle(
-                              fontSize: 18,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// ---------------- SEARCH FIELD ----------------
+            TextField(
+              controller: searchCtrl,
+              decoration: InputDecoration(
+                hintText: "Search for skills (e.g. Python, Figma)",
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
                 ),
               ),
-            );
-          },
+            ),
+
+            const SizedBox(height: 20),
+
+            /// ---------------- SEARCH RESULTS ----------------
+            if (searching)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 6),
+                child: Text(
+                  "Searching...",
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+
+            if (searchResults.isNotEmpty)
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: searchResults.map((skill) {
+                  final isSelected = selectedSkills.contains(skill);
+                  return ChoiceChip(
+                    label: Text(skill),
+                    selected: isSelected,
+                    selectedColor: Colors.deepPurple,
+                    backgroundColor: Colors.grey.shade100,
+                    labelStyle: TextStyle(
+                      color: isSelected ? Colors.white : Colors.black,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    onSelected: (_) => _toggleSkill(skill),
+                  );
+                }).toList(),
+              ),
+
+            const SizedBox(height: 20),
+
+            /// ---------------- SELECTED SKILLS ----------------
+            if (selectedSkills.isNotEmpty) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "SELECTED SKILLS",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  Text(
+                    "${selectedSkills.length} selected",
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: selectedSkills.map((skill) {
+                  return Chip(
+                    label: Text(
+                      skill,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    backgroundColor: Colors.blue,
+                    deleteIcon: const Icon(Icons.close, color: Colors.white),
+                    onDeleted: () => _toggleSkill(skill),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 25),
+            ],
+
+            /// ---------------- SUGGESTED SKILLS ----------------
+            const Text(
+              "SUGGESTED SKILLS",
+              style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
+            ),
+
+            const SizedBox(height: 12),
+
+            Expanded(
+              child: SingleChildScrollView(
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: suggestedSkills.map((skill) {
+                    final isSelected = selectedSkills.contains(skill);
+                    return ChoiceChip(
+                      label: Text(skill),
+                      selected: isSelected,
+                      selectedColor: Colors.deepPurple,
+                      backgroundColor: Colors.grey.shade100,
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : Colors.black,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      onSelected: (_) => _toggleSkill(skill),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 15),
+
+            /// ---------------- SAVE BUTTON ----------------
+            SizedBox(
+              width: double.infinity,
+              height: 60,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+                onPressed: saving ? null : _finish,
+                child: Text(
+                  saving ? "Saving..." : "Save Skills",
+                  style: const TextStyle(fontSize: 18, color: Colors.white),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

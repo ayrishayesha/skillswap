@@ -9,46 +9,226 @@ class AllHelpersPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("All Helpers")),
-      body: helpers.isEmpty
-          ? const Center(child: Text("No helpers found"))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: helpers.length,
-              itemBuilder: (context, i) {
-                final h = helpers[i];
+      backgroundColor: Colors.grey.shade50,
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.grey.shade200,
-                      backgroundImage:
-                          h['avatar_url'] != null &&
-                              h['avatar_url'].toString().isNotEmpty
-                          ? NetworkImage(h['avatar_url'])
-                          : null,
-                      child:
-                          h['avatar_url'] == null ||
-                              h['avatar_url'].toString().isEmpty
-                          ? const Icon(Icons.person)
-                          : null,
-                    ),
-                    title: Text(h['full_name'] ?? ''),
-                    subtitle: Text((h['skills'] as List?)?.join(", ") ?? ""),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => HelperDetailsPage(helperId: h['id']),
-                        ),
-                      );
+      /// ---------- APPBAR ----------
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          "Python Helpers",
+          style: TextStyle(color: Colors.black),
+        ),
+        iconTheme: const IconThemeData(color: Colors.black),
+      ),
+
+      /// ---------- BODY ----------
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// Total Helpers
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+            child: Text(
+              "${helpers.length} Helpers available",
+              style: const TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+          ),
+
+          /// List
+          Expanded(
+            child: helpers.isEmpty
+                ? const Center(child: Text("No helpers found"))
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: helpers.length,
+                    itemBuilder: (context, i) {
+                      final h = helpers[i];
+
+                      return HelperCard(helper: h);
                     },
                   ),
-                );
-              },
-            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// ================= HELPER CARD =================
+
+class HelperCard extends StatelessWidget {
+  final Map helper;
+
+  const HelperCard({super.key, required this.helper});
+
+  @override
+  Widget build(BuildContext context) {
+    final name = helper['full_name'] ?? '';
+    final dept = helper['department'] ?? '';
+    final avatar = helper['avatar_url'];
+
+    final skills =
+        (helper['skills'] as List?)?.map((e) => e.toString()).toList() ?? [];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade200,
+            blurRadius: 8,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+
+      /// -------- MAIN COLUMN --------
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// ========== TOP ROW ==========
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// Avatar
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: Colors.grey.shade200,
+                backgroundImage: avatar != null && avatar.toString().isNotEmpty
+                    ? NetworkImage(avatar)
+                    : null,
+                child: avatar == null || avatar.toString().isEmpty
+                    ? const Icon(Icons.person, size: 28)
+                    : null,
+              ),
+
+              const SizedBox(width: 12),
+
+              /// Name + Dept
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const SizedBox(height: 2),
+
+                    Text(
+                      dept,
+                      style: const TextStyle(color: Colors.blue, fontSize: 13),
+                    ),
+                    const SizedBox(height: 2),
+
+                    if (skills.isNotEmpty)
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: skills.map((s) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.deepPurple.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              s,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          /// ========== SKILLS ==========
+          // if (skills.isNotEmpty)
+          //   Wrap(
+          //     spacing: 8,
+          //     runSpacing: 8,
+          //     children: skills.map((s) {
+          //       return Container(
+          //         padding: const EdgeInsets.symmetric(
+          //           horizontal: 10,
+          //           vertical: 4,
+          //         ),
+          //         decoration: BoxDecoration(
+          //           color: Colors.deepPurple.shade50,
+          //           borderRadius: BorderRadius.circular(12),
+          //         ),
+          //         child: Text(s, style: const TextStyle(fontSize: 12)),
+          //       );
+          //     }).toList(),
+          //   ),
+          const SizedBox(height: 12),
+
+          /// ========== BUTTONS ==========
+          Row(
+            children: [
+              /// View Profile
+              Expanded(
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            HelperDetailsPage(helperId: helper['id']),
+                      ),
+                    );
+                  },
+                  child: const Text("View Profile"),
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              /// Request Help
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Request feature coming soon"),
+                      ),
+                    );
+                  },
+                  child: const Text("Request Help"),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
