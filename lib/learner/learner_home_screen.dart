@@ -3,8 +3,9 @@ import 'package:my_app/helper/helper_details_screen.dart';
 import 'package:my_app/learner/notification_screen.dart';
 import 'package:my_app/learner/profile/learner_profile%20_page.dart';
 import 'package:my_app/screen/chats_screen.dart';
+import 'package:my_app/request/request_service.dart';
 
-import 'package:my_app/screen/requests_screen.dart';
+import 'package:my_app/request/requests_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_app/helper/all_helper_view_screen.dart';
 
@@ -130,7 +131,7 @@ class _LearnerHomeState extends State<LearnerHome> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  "SkillSwap",
+                  "QuickHelp",
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 Stack(
@@ -438,44 +439,11 @@ class _LearnerHomeState extends State<LearnerHome> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                onPressed: () async {
-                  final user = supabase.auth.currentUser;
-
-                  if (user == null) {
-                    print("User not logged in");
-                    return;
-                  }
-
-                  try {
-                    // duplicate request check
-                    final existing = await supabase
-                        .from('request')
-                        .select()
-                        .eq('learner_id', user.id)
-                        .eq('helper_id', h['id']);
-
-                    if (existing.isNotEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Already Requested")),
-                      );
-                      return;
-                    }
-
-                    // insert request
-                    await supabase.from('request').insert({
-                      'learner_id': user.id,
-                      'helper_id': h['id'],
-                      'status': 'pending',
-                    });
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Request Sent Successfully ✅"),
-                      ),
-                    );
-                  } catch (e) {
-                    print("Insert Error ❌: $e");
-                  }
+                onPressed: () {
+                  RequestService().sendRequest(
+                    context: context,
+                    helperId: h['id'],
+                  );
                 },
 
                 child: const Text(
