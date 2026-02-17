@@ -11,10 +11,10 @@ bool isStrongPassword(String password) {
   return regex.hasMatch(password);
 }
 
-// // ---------- UNIVERSITY EMAIL CHECK ----------
-// bool isUniversityEmail(String email) {
-//   return email.endsWith("@lus.ac.bd");
-// }
+// ---------- UNIVERSITY EMAIL CHECK ----------
+bool isUniversityEmail(String email) {
+  return email.endsWith("@lus.ac.bd");
+}
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -158,9 +158,9 @@ class _SignupscreenState extends State<SignupScreen> {
                       if (value == null || value.trim().isEmpty) {
                         return "Email is required";
                       }
-                      // if (!isUniversityEmail(value.trim())) {
-                      //   return "Use university email (example@lus.ac.bd)";
-                      // }
+                      if (!isUniversityEmail(value.trim())) {
+                        return "Use university email (example@lus.ac.bd)";
+                      }
                       return null;
                     },
                     decoration: InputDecoration(

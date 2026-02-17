@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/screen/basic_info_screen.dart';
 import 'package:my_app/splashscreen/splash_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -87,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         SizedBox(height: 12),
                         Text(
-                          "SkillSwap",
+                          "QuickHelp",
                           style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.bold,

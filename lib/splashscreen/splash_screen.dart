@@ -62,7 +62,7 @@ class _SplashScreenState extends State<SplashScreen> {
       if (role == "helper") {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const HelperAdminHome()),
+          MaterialPageRoute(builder: (_) => const LearnerHome()),
         );
       }
       // ✅ LEARNER
@@ -100,7 +100,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 25),
             const Text(
-              "LU SkillSwap",
+              "LU QuickHelp",
               style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 30),

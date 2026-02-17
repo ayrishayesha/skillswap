@@ -98,7 +98,7 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
     if (helper) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const Helper_Home_Page()),
+        MaterialPageRoute(builder: (_) => const HelperAdminHome()),
       );
     } else {
       Navigator.pushReplacement(

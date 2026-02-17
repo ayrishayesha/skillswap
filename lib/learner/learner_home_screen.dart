@@ -438,11 +438,46 @@ class _LearnerHomeState extends State<LearnerHome> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                onPressed: () {
-                  // Only button click → Request action
-                  print("Send request to helper ${h['id']}");
-                  // Tumaar request logic ekhane add korte paro
+                onPressed: () async {
+                  final user = supabase.auth.currentUser;
+
+                  if (user == null) {
+                    print("User not logged in");
+                    return;
+                  }
+
+                  try {
+                    // duplicate request check
+                    final existing = await supabase
+                        .from('request')
+                        .select()
+                        .eq('learner_id', user.id)
+                        .eq('helper_id', h['id']);
+
+                    if (existing.isNotEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Already Requested")),
+                      );
+                      return;
+                    }
+
+                    // insert request
+                    await supabase.from('request').insert({
+                      'learner_id': user.id,
+                      'helper_id': h['id'],
+                      'status': 'pending',
+                    });
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Request Sent Successfully ✅"),
+                      ),
+                    );
+                  } catch (e) {
+                    print("Insert Error ❌: $e");
+                  }
                 },
+
                 child: const Text(
                   "Request",
                   style: TextStyle(color: Color.fromARGB(249, 255, 255, 255)),
