@@ -56,14 +56,32 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
   }
 
   Future<void> updateStatus(String requestId, String status) async {
+    final index = requests.indexWhere((r) => r['id'] == requestId);
+    if (index == -1) return;
+
+    // Optimistic UI update
+    setState(() {
+      requests[index]['status'] = status;
+    });
+
     try {
       await supabase
           .from('request')
           .update({'status': status})
           .eq('id', requestId);
-      fetchRequests();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Request ${status.toUpperCase()}')),
+      );
     } catch (e) {
-      print("UPDATE ERROR => $e");
+      // Revert UI if error
+      setState(() {
+        requests[index]['status'] = 'pending';
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error updating request: $e')));
     }
   }
 
@@ -116,7 +134,10 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
                               ),
                             ],
                           )
-                        : Text(r['status'].toString().toUpperCase()),
+                        : Text(
+                            r['status'].toString().toUpperCase(),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                   ),
                 );
               },

@@ -20,6 +20,7 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
     fetchRequests();
   }
 
+  // Fetch requests assigned to this helper
   Future<void> fetchRequests() async {
     final user = supabase.auth.currentUser;
     if (user == null) {
@@ -46,7 +47,7 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
           .order('created_at', ascending: false);
 
       setState(() {
-        requests = data;
+        requests = data as List<dynamic>;
         loading = false;
       });
     } catch (e) {
@@ -55,12 +56,17 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
     }
   }
 
+  // Update request status in Supabase
   Future<void> updateStatus(String requestId, String status) async {
     try {
-      await supabase
+      final response = await supabase
           .from('request')
           .update({'status': status})
           .eq('id', requestId);
+
+      print("Updated request $requestId to $status");
+
+      // Refresh the request list to reflect changes
       fetchRequests();
     } catch (e) {
       print("UPDATE ERROR => $e");
@@ -81,6 +87,7 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
               itemBuilder: (context, index) {
                 final r = requests[index];
                 final learner = r['learner'];
+
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(

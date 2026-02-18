@@ -4,16 +4,10 @@ import 'package:my_app/helper/helper_notification_page.dart';
 import 'package:my_app/helper/helper_request_page.dart';
 import 'package:my_app/screen/chats_screen.dart';
 import 'package:my_app/request/request_service.dart';
-import 'package:my_app/request/requests_screen.dart';
 import 'package:my_app/screen/learner_request_page.dart';
-import 'package:my_app/screen/profile%20_page.dart';
+import 'package:my_app/screen/profile _page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_app/helper/all_helper_view_screen.dart';
-// // ✅ CHANGED: Import role based pages
-// import 'package:my_app/helper/helper_requests_page.dart';
-// import 'package:my_app/request/learner_requests_page.dart';
-// import 'package:my_app/helper/helper_notification_page.dart';
-// import 'package:my_app/learner/learner_notification_page.dart';
 
 class LearnerHome extends StatefulWidget {
   const LearnerHome({super.key});
