@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/learner/learner_home_screen.dart';
-import 'package:my_app/learner/profile/learner_profile%20_page.dart';
+import 'package:my_app/screen/home_screen.dart';
+import 'package:my_app/screen/profile%20_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final supabase = Supabase.instance.client;

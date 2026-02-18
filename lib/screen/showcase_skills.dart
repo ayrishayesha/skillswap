@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/helper/helper_home_screen.dart';
-import 'package:my_app/learner/learner_home_screen.dart';
-import 'package:my_app/splashscreen/splash_screen.dart';
+import 'package:my_app/screen/home_screen.dart';
+import 'package:my_app/screen/splash_screen.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 

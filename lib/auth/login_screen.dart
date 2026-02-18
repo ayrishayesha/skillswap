@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/splashscreen/splash_screen.dart';
+import 'package:my_app/screen/splash_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:my_app/auth/signup_screen.dart';

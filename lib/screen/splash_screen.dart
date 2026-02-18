@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/auth/login_screen.dart';
-import 'package:my_app/learner/learner_home_screen.dart';
-import 'package:my_app/helper/helper_home_screen.dart';
+import 'package:my_app/screen/home_screen.dart';
 import 'package:my_app/screen/basic_info_screen.dart'; // 👈 Add import for BasicInfoScreen
 import 'package:supabase_flutter/supabase_flutter.dart';
 

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/helper/helper_details_screen.dart';
-import 'package:my_app/learner/notification_screen.dart';
-import 'package:my_app/learner/profile/learner_profile%20_page.dart';
 import 'package:my_app/screen/chats_screen.dart';
 import 'package:my_app/request/request_service.dart';
-
 import 'package:my_app/request/requests_screen.dart';
+import 'package:my_app/screen/profile%20_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_app/helper/all_helper_view_screen.dart';
 
@@ -139,12 +137,12 @@ class _LearnerHomeState extends State<LearnerHome> {
                     IconButton(
                       icon: const Icon(Icons.notifications_none),
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const NotificationPage(),
-                          ),
-                        );
+                        // Navigator.push(
+                        //   context,
+                        //   MaterialPageRoute(
+                        //     builder: (_) => const NotificationPage(),
+                        //   ),
+                        // );
                       },
                     ),
                     Positioned(

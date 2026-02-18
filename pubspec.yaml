@@ -31,6 +31,10 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Date formatting
+  intl: ^0.18.1
+  
+
   # Supabase (auth + database + storage)
   supabase_flutter: ^2.12.0
 

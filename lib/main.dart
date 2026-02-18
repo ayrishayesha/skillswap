@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:my_app/auth/login_screen.dart';
-import 'package:my_app/splashscreen/splash_screen.dart';
+import 'package:my_app/screen/splash_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
