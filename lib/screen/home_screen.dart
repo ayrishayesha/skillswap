@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/helper/helper_details_screen.dart';
+import 'package:my_app/helper/helper_notification_page.dart';
+import 'package:my_app/helper/helper_request_page.dart';
 import 'package:my_app/screen/chats_screen.dart';
 import 'package:my_app/request/request_service.dart';
 import 'package:my_app/request/requests_screen.dart';
+import 'package:my_app/screen/learner_request_page.dart';
 import 'package:my_app/screen/profile%20_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_app/helper/all_helper_view_screen.dart';
+// // ✅ CHANGED: Import role based pages
+// import 'package:my_app/helper/helper_requests_page.dart';
+// import 'package:my_app/request/learner_requests_page.dart';
+// import 'package:my_app/helper/helper_notification_page.dart';
+// import 'package:my_app/learner/learner_notification_page.dart';
 
 class LearnerHome extends StatefulWidget {
   const LearnerHome({super.key});
@@ -22,13 +30,34 @@ class _LearnerHomeState extends State<LearnerHome> {
   List helpers = [];
   List allHelpers = [];
 
+  // ✅ CHANGED: Role variable add করা হয়েছে
+  String? currentUserRole;
+
   String selectedFilter = "All";
   TextEditingController searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    fetchCurrentUserRole(); // ✅ CHANGED
     fetchHelpers();
+  }
+
+  // ✅ CHANGED: Current user role fetch function
+  Future<void> fetchCurrentUserRole() async {
+    final user = supabase.auth.currentUser;
+
+    if (user != null) {
+      final data = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+      setState(() {
+        currentUserRole = data['role'];
+      });
+    }
   }
 
   Future<void> fetchHelpers() async {
@@ -86,7 +115,14 @@ class _LearnerHomeState extends State<LearnerHome> {
         index: currentIndex,
         children: [
           homeScreen(),
-          const RequestsPage(),
+
+          // ✅ CHANGED: Role based Requests Page
+          currentUserRole == null
+              ? const Center(child: CircularProgressIndicator())
+              : (currentUserRole == 'helper'
+                    ? const HelperRequestsPage()
+                    : const LearnerRequestsPage()),
+
           const ChatsPage(),
           const Learner_Profile_Page(),
         ],
@@ -134,17 +170,28 @@ class _LearnerHomeState extends State<LearnerHome> {
                 ),
                 Stack(
                   children: [
+                    // ✅ CHANGED: Role based Notification navigation
                     IconButton(
                       icon: const Icon(Icons.notifications_none),
                       onPressed: () {
-                        // Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(
-                        //     builder: (_) => const NotificationPage(),
-                        //   ),
-                        // );
+                        if (currentUserRole == 'helper') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const HelperNotificationPage(),
+                            ),
+                          );
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const HelperNotificationPage(),
+                            ),
+                          );
+                        }
                       },
                     ),
+
                     Positioned(
                       right: 8,
                       top: 8,
