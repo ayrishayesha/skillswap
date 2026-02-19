@@ -6,7 +6,7 @@ import 'package:my_app/screen/chats_screen.dart';
 import 'package:my_app/request/request_service.dart';
 import 'package:my_app/screen/leaener_notification_screen.dart';
 import 'package:my_app/screen/learner_request_page.dart';
-import 'package:my_app/screen/profile _page.dart';
+import 'package:my_app/screen/profile_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_app/helper/all_helper_view_screen.dart';
 
@@ -480,7 +480,7 @@ class _LearnerHomeState extends State<LearnerHome> {
                   ),
                 ),
                 onPressed: () {
-                  RequestService().sendRequest(
+                  RequestService().showRequestPopup(
                     context: context,
                     helperId: h['id'],
                   );

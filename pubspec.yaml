@@ -33,7 +33,10 @@ dependencies:
 
   # Date formatting
   intl: ^0.18.1
-  
+
+  file_picker: ^5.5.0
+
+  dropdown_search: ^5.0.6
 
   # Supabase (auth + database + storage)
   supabase_flutter: ^2.12.0

@@ -1,22 +1,80 @@
+// request_service.dart
+
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:my_app/request/create_request_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RequestService {
   final SupabaseClient supabase = Supabase.instance.client;
 
-  Future<void> sendRequest({
+  // ================= POPUP =================
+  Future<void> showRequestPopup({
     required BuildContext context,
     required String helperId,
   }) async {
+    if (!context.mounted) return;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text("Send Request"),
+          content: const Text(
+            "Do you want to create a new request for this helper?",
+          ),
+          actions: [
+            // Cancel
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+              },
+              child: const Text("Cancel"),
+            ),
+
+            // Go to Create Page
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CreateRequestPage(helperId: helperId),
+                  ),
+                );
+              },
+              child: const Text("Create Request"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ================= SEND FINAL REQUEST =================
+  Future<void> sendFinalRequest({
+    required BuildContext context,
+    required String helperId,
+    required String title,
+    required String description,
+    required String subject,
+    PlatformFile? file,
+  }) async {
+    if (!context.mounted) return;
+
     final user = supabase.auth.currentUser;
 
     if (user == null) {
-      _showMessage(context, "User not logged in");
+      _showMessage(context, "User not logged in ❌");
       return;
     }
 
     try {
-      // 1️⃣ Get latest request between learner & helper
+      // ================= CHECK LAST REQUEST =================
       final lastRequest = await supabase
           .from('request')
           .select('status')
@@ -26,31 +84,57 @@ class RequestService {
           .limit(1)
           .maybeSingle();
 
-      // 2️⃣ Block only if last is pending
+      // Block if already pending
       if (lastRequest != null && lastRequest['status'] == 'pending') {
         _showMessage(context, "Already Pending ⏳");
         return;
       }
 
-      // 3️⃣ Insert new request
+      String? fileUrl;
+
+      // ================= FILE UPLOAD =================
+      if (file != null && file.bytes != null) {
+        final fileName =
+            "${DateTime.now().millisecondsSinceEpoch}_${file.name}";
+
+        await supabase.storage
+            .from('request-files')
+            .uploadBinary(fileName, file.bytes!);
+
+        fileUrl = supabase.storage.from('request-files').getPublicUrl(fileName);
+      }
+
+      // ================= INSERT REQUEST =================
       await supabase.from('request').insert({
         'learner_id': user.id,
         'helper_id': helperId,
+        'title': title,
+        'description': description,
+        'subject': subject,
         'status': 'pending',
+        'attachment_url': fileUrl,
+        'created_at': DateTime.now().toIso8601String(),
       });
 
       _showMessage(context, "Request Sent Successfully ✅");
+
+      Navigator.pop(context); // Back after send
     } catch (e) {
-      print("SEND ERROR => $e");
+      debugPrint("REQUEST ERROR => $e");
       _showMessage(context, "Something went wrong ❌");
     }
   }
 
-  void _showMessage(BuildContext context, String message) {
+  // ================= SNACKBAR =================
+  void _showMessage(BuildContext context, String msg) {
     if (!context.mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.black87),
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Colors.black87,
+        duration: const Duration(seconds: 2),
+      ),
     );
   }
 }
