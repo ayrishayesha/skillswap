@@ -16,19 +16,23 @@ class RequestService {
     }
 
     try {
-      // 1️⃣ Duplicate check
-      final existing = await supabase
+      // 1️⃣ Get latest request between learner & helper
+      final lastRequest = await supabase
           .from('request')
-          .select()
+          .select('status')
           .eq('learner_id', user.id)
-          .eq('helper_id', helperId);
+          .eq('helper_id', helperId)
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
 
-      if (existing.isNotEmpty) {
-        _showMessage(context, "Already Requested");
+      // 2️⃣ Block only if last is pending
+      if (lastRequest != null && lastRequest['status'] == 'pending') {
+        _showMessage(context, "Already Pending ⏳");
         return;
       }
 
-      // 2️⃣ Insert request
+      // 3️⃣ Insert new request
       await supabase.from('request').insert({
         'learner_id': user.id,
         'helper_id': helperId,
@@ -37,13 +41,16 @@ class RequestService {
 
       _showMessage(context, "Request Sent Successfully ✅");
     } catch (e) {
-      _showMessage(context, "Error: $e");
+      print("SEND ERROR => $e");
+      _showMessage(context, "Something went wrong ❌");
     }
   }
 
   void _showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.black87),
+    );
   }
 }

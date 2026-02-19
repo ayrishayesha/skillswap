@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class LearnerRequestsPage extends StatefulWidget {
-  const LearnerRequestsPage({super.key});
+class LearnerNotificationPage extends StatefulWidget {
+  const LearnerNotificationPage({super.key});
 
   @override
-  State<LearnerRequestsPage> createState() => _LearnerRequestsPageState();
+  State<LearnerNotificationPage> createState() =>
+      _LearnerNotificationPageState();
 }
 
-class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
+class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
   final supabase = Supabase.instance.client;
 
   List requests = [];
@@ -21,7 +22,7 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
     super.initState();
 
     fetchRequests();
-    listenForUpdates(); // 🔔 realtime
+    listenRealtime(); // 🔔 Realtime Listener
   }
 
   @override
@@ -34,57 +35,59 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
   Future<void> fetchRequests() async {
     final user = supabase.auth.currentUser;
 
-    if (user == null) {
-      setState(() => loading = false);
-      return;
-    }
+    if (user == null) return;
 
-    final data = await supabase
-        .from('request')
-        .select('''
-          id,
-          status,
-          created_at,
-
-          helper:profiles!helper_id (
+    try {
+      final data = await supabase
+          .from('request')
+          .select('''
             id,
-            full_name,
-            avatar_url,
-            department,
-            batch
-          )
-        ''')
-        .eq('learner_id', user.id)
-        .order('created_at', ascending: false);
+            status,
+            created_at,
 
-    setState(() {
-      requests = data;
-      loading = false;
-    });
+            helper:profiles!helper_id (
+              id,
+              full_name,
+              avatar_url,
+              department,
+              batch
+            )
+          ''')
+          .eq('learner_id', user.id)
+          .order('created_at', ascending: false);
+
+      setState(() {
+        requests = data;
+        loading = false;
+      });
+    } catch (e) {
+      print("FETCH ERROR => $e");
+      setState(() => loading = false);
+    }
   }
 
   // ================= REALTIME =================
-  void listenForUpdates() {
+  void listenRealtime() {
     final user = supabase.auth.currentUser;
 
     if (user == null) return;
 
     channel = supabase
-        .channel('learner-request-updates')
+        .channel('learner-notification')
         .onPostgresChanges(
           event: PostgresChangeEvent.update,
           schema: 'public',
           table: 'request',
           callback: (payload) {
-            final newRecord = payload.newRecord;
+            final newData = payload.newRecord;
 
-            // Check if this update is for current learner
-            if (newRecord['learner_id'] == user.id) {
-              final status = newRecord['status'];
+            // Check if this update is for this learner
+            if (newData['learner_id'] == user.id) {
+              final status = newData['status'];
 
               if (status == 'accepted' || status == 'rejected') {
                 fetchRequests();
-                showNotification(status);
+                showPopup(status);
               }
             }
           },
@@ -93,17 +96,22 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
   }
 
   // ================= POPUP =================
-  void showNotification(String status) {
+  void showPopup(String status) {
     if (!mounted) return;
 
-    final msg = status == 'accepted'
-        ? "🎉 Your request was ACCEPTED!"
-        : "❌ Your request was REJECTED";
+    String msg = "";
+
+    if (status == "accepted") {
+      msg = "🎉 Your request has been ACCEPTED!";
+    } else if (status == "rejected") {
+      msg = "❌ Your request has been REJECTED";
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: status == 'accepted' ? Colors.green : Colors.red,
+        backgroundColor: status == "accepted" ? Colors.green : Colors.red,
+        duration: const Duration(seconds: 3),
       ),
     );
   }
@@ -112,29 +120,26 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("My Requests")),
+      appBar: AppBar(title: const Text("Notifications"), centerTitle: true),
 
       backgroundColor: const Color(0xffF6F7FB),
 
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : requests.isEmpty
-          ? const Center(child: Text("No requests yet"))
+          ? const Center(child: Text("No notifications yet"))
           : RefreshIndicator(
               onRefresh: fetchRequests,
-
               child: ListView.builder(
                 padding: const EdgeInsets.all(16),
-
                 itemCount: requests.length,
-
                 itemBuilder: (context, index) {
                   final r = requests[index];
                   final helper = r['helper'];
 
                   if (helper == null) return const SizedBox();
 
-                  return requestCard(r, helper);
+                  return notificationCard(r, helper);
                 },
               ),
             ),
@@ -142,7 +147,7 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
   }
 
   // ================= CARD =================
-  Widget requestCard(Map r, Map helper) {
+  Widget notificationCard(Map r, Map helper) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -155,8 +160,9 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
 
       child: Row(
         children: [
+          /// Avatar
           CircleAvatar(
-            radius: 26,
+            radius: 24,
             backgroundImage:
                 helper['avatar_url'] != null &&
                     helper['avatar_url'].toString().isNotEmpty
@@ -169,6 +175,7 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
 
           const SizedBox(width: 12),
 
+          /// Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,31 +191,39 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
                 const SizedBox(height: 4),
 
                 Text(
-                  "${helper['department']} • Batch ${helper['batch']}",
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  getMessage(r['status']),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: getStatusColor(r['status']),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
 
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
 
-                Row(
-                  children: [
-                    const Text("Status: "),
-                    Text(
-                      r['status'],
-                      style: TextStyle(
-                        color: _getStatusColor(r['status']),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+                Text(
+                  formatDate(r['created_at']),
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
                 ),
               ],
             ),
           ),
 
-          Text(
-            _formatDate(r['created_at']),
-            style: const TextStyle(fontSize: 11),
+          /// Status Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: getStatusColor(r['status']).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              r['status'].toString().toUpperCase(),
+              style: TextStyle(
+                fontSize: 11,
+                color: getStatusColor(r['status']),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -217,7 +232,17 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
 
   // ================= HELPERS =================
 
-  Color _getStatusColor(String status) {
+  String getMessage(String status) {
+    if (status == "accepted") {
+      return "Helper accepted your request";
+    } else if (status == "rejected") {
+      return "Helper rejected your request";
+    } else {
+      return "Request pending";
+    }
+  }
+
+  Color getStatusColor(String status) {
     switch (status) {
       case "accepted":
         return Colors.green;
@@ -228,7 +253,7 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
     }
   }
 
-  String _formatDate(String date) {
+  String formatDate(String date) {
     final dt = DateTime.parse(date);
 
     return "${dt.day}/${dt.month}/${dt.year}";

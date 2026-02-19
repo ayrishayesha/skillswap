@@ -4,6 +4,7 @@ import 'package:my_app/helper/helper_notification_page.dart';
 import 'package:my_app/helper/helper_request_page.dart';
 import 'package:my_app/screen/chats_screen.dart';
 import 'package:my_app/request/request_service.dart';
+import 'package:my_app/screen/leaener_notification_screen.dart';
 import 'package:my_app/screen/learner_request_page.dart';
 import 'package:my_app/screen/profile _page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -179,7 +180,7 @@ class _LearnerHomeState extends State<LearnerHome> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const HelperNotificationPage(),
+                              builder: (_) => const LearnerNotificationPage(),
                             ),
                           );
                         }

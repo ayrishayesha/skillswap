@@ -20,12 +20,11 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
     fetchRequests();
   }
 
+  // ================= FETCH =================
   Future<void> fetchRequests() async {
     final user = supabase.auth.currentUser;
-    if (user == null) {
-      setState(() => loading = false);
-      return;
-    }
+
+    if (user == null) return;
 
     try {
       final data = await supabase
@@ -34,6 +33,7 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
             id,
             status,
             created_at,
+
             learner:profiles!learner_id (
               id,
               full_name,
@@ -55,93 +55,196 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
     }
   }
 
+  // ================= UPDATE =================
   Future<void> updateStatus(String requestId, String status) async {
-    final index = requests.indexWhere((r) => r['id'] == requestId);
-    if (index == -1) return;
-
-    // Optimistic UI update
-    setState(() {
-      requests[index]['status'] = status;
-    });
-
     try {
       await supabase
           .from('request')
           .update({'status': status})
           .eq('id', requestId);
 
+      fetchRequests();
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Request ${status.toUpperCase()}')),
+        SnackBar(
+          content: Text("Request $status"),
+          backgroundColor: status == "accepted" ? Colors.green : Colors.red,
+        ),
       );
     } catch (e) {
-      // Revert UI if error
-      setState(() {
-        requests[index]['status'] = 'pending';
-      });
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error updating request: $e')));
+      print("UPDATE ERROR => $e");
     }
   }
 
+  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Pending Requests")),
+      appBar: AppBar(title: const Text("Helper Requests"), centerTitle: true),
+
+      backgroundColor: const Color(0xffF6F7FB),
+
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : requests.isEmpty
-          ? const Center(child: Text("No requests"))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: requests.length,
-              itemBuilder: (context, index) {
-                final r = requests[index];
-                final learner = r['learner'];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage: learner['avatar_url'] != null
-                          ? NetworkImage(learner['avatar_url'])
-                          : null,
-                      child: learner['avatar_url'] == null
-                          ? const Icon(Icons.person)
-                          : null,
-                    ),
-                    title: Text(learner['full_name'] ?? ''),
-                    subtitle: Text("Status: ${r['status']}"),
-                    trailing: r['status'] == 'pending'
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.check,
-                                  color: Colors.green,
-                                ),
-                                onPressed: () =>
-                                    updateStatus(r['id'], 'accepted'),
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.close,
-                                  color: Colors.red,
-                                ),
-                                onPressed: () =>
-                                    updateStatus(r['id'], 'rejected'),
-                              ),
-                            ],
-                          )
-                        : Text(
-                            r['status'].toString().toUpperCase(),
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                  ),
-                );
-              },
+          ? const Center(child: Text("No requests yet"))
+          : RefreshIndicator(
+              onRefresh: fetchRequests,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: requests.length,
+                itemBuilder: (context, index) {
+                  final r = requests[index];
+                  final learner = r['learner'];
+
+                  if (learner == null) {
+                    return const SizedBox();
+                  }
+
+                  return requestCard(r, learner);
+                },
+              ),
             ),
     );
+  }
+
+  // ================= CARD =================
+  Widget requestCard(Map r, Map learner) {
+    final status = r['status'];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 6)],
+      ),
+
+      child: Column(
+        children: [
+          Row(
+            children: [
+              /// Avatar
+              CircleAvatar(
+                radius: 24,
+                backgroundImage:
+                    learner['avatar_url'] != null &&
+                        learner['avatar_url'].toString().isNotEmpty
+                    ? NetworkImage(learner['avatar_url'])
+                    : null,
+                child: learner['avatar_url'] == null
+                    ? const Icon(Icons.person)
+                    : null,
+              ),
+
+              const SizedBox(width: 12),
+
+              /// Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      learner['full_name'] ?? '',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    Text(
+                      "${learner['department'] ?? ''} | ${learner['batch'] ?? ''}",
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    Text(
+                      "Status: ${status.toString().toUpperCase()}",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: getStatusColor(status),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          /// Buttons
+          if (status == "pending")
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      updateStatus(r['id'], "accepted");
+                    },
+                    icon: const Icon(Icons.check),
+                    label: const Text("Accept"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 10),
+
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      updateStatus(r['id'], "rejected");
+                    },
+                    icon: const Icon(Icons.close),
+                    label: const Text("Reject"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+          /// If already accepted/rejected
+          if (status != "pending")
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: getStatusColor(status).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                "Already ${status.toString().toUpperCase()}",
+                style: TextStyle(
+                  color: getStatusColor(status),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ================= HELPERS =================
+  Color getStatusColor(String status) {
+    switch (status) {
+      case "accepted":
+        return Colors.green;
+      case "rejected":
+        return Colors.red;
+      default:
+        return Colors.orange;
+    }
   }
 }

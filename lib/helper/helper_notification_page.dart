@@ -59,17 +59,36 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
   // Update request status in Supabase
   Future<void> updateStatus(String requestId, String status) async {
     try {
-      final response = await supabase
+      // 1️⃣ Update in Database FIRST
+      final res = await supabase
           .from('request')
           .update({'status': status})
-          .eq('id', requestId);
+          .eq('id', requestId)
+          .select();
 
-      print("Updated request $requestId to $status");
+      if (res.isEmpty) {
+        throw "Update failed";
+      }
 
-      // Refresh the request list to reflect changes
-      fetchRequests();
+      // 2️⃣ Reload from DB
+      await fetchRequests();
+
+      // 3️⃣ Show success
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Request ${status.toUpperCase()}"),
+          backgroundColor: status == 'accepted' ? Colors.green : Colors.red,
+        ),
+      );
     } catch (e) {
       print("UPDATE ERROR => $e");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Update failed: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
