@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/helper/helper_details_screen.dart';
 import 'package:my_app/helper/helper_notification_page.dart';
-import 'package:my_app/helper/helper_request_page.dart';
+import 'package:my_app/helper/helper_notification_page1.dart';
 import 'package:my_app/screen/chats_screen.dart';
 import 'package:my_app/request/request_service.dart';
 import 'package:my_app/screen/leaener_notification_screen.dart';
@@ -431,7 +431,7 @@ class _LearnerHomeState extends State<LearnerHome> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   Text(
                     h['full_name'] ?? '',
                     style: const TextStyle(
@@ -467,7 +467,7 @@ class _LearnerHomeState extends State<LearnerHome> {
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
             // ================= BUTTON =================
             SizedBox(

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/helper/helper_details_screen.dart';
+import 'package:my_app/request_details.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LearnerRequestsPage extends StatefulWidget {
@@ -45,6 +47,7 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
           id,
           status,
           created_at,
+          subject,
 
           helper:profiles!helper_id (
             id,
@@ -112,7 +115,7 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("My Requests")),
+      appBar: AppBar(title: const Text("My Requests"), centerTitle: true),
 
       backgroundColor: const Color(0xffF6F7FB),
 
@@ -143,84 +146,105 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
 
   // ================= CARD =================
   Widget requestCard(Map r, Map helper) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 6)],
-      ),
-
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 26,
-            backgroundImage:
-                helper['avatar_url'] != null &&
-                    helper['avatar_url'].toString().isNotEmpty
-                ? NetworkImage(helper['avatar_url'])
-                : null,
-            child: helper['avatar_url'] == null
-                ? const Icon(Icons.person)
-                : null,
-          ),
-
-          const SizedBox(width: 12),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  helper['full_name'] ?? '',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-                Text(
-                  "${helper['department']} • Batch ${helper['batch']}",
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-
-                const SizedBox(height: 6),
-
-                Row(
-                  children: [
-                    const Text("Status: "),
-                    Text(
-                      r['status'],
-                      style: TextStyle(
-                        color: _getStatusColor(r['status']),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+    return GestureDetector(
+      // ✅ ADDED: Clickable
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RequestDetailsPage(
+              requestId: r['id'], // ✅ শুধু id পাঠাতে হবে
             ),
           ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 6)],
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 26,
+              backgroundImage:
+                  helper['avatar_url'] != null &&
+                      helper['avatar_url'].toString().isNotEmpty
+                  ? NetworkImage(helper['avatar_url'])
+                  : null,
+              child: helper['avatar_url'] == null
+                  ? const Icon(Icons.person)
+                  : null,
+            ),
 
-          Text(
-            _formatDate(r['created_at']),
-            style: const TextStyle(fontSize: 11),
-          ),
-        ],
+            const SizedBox(width: 12),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    helper['full_name'] ?? '',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+
+                  const SizedBox(height: 4),
+
+                  Text(
+                    "${helper['department']} • Batch ${helper['batch']}",
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  if (r['subject'] != null)
+                    Text(
+                      "Need help for ${r['subject']}",
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+
+                  const SizedBox(height: 6),
+
+                  Row(
+                    children: [
+                      const Text("Status: "),
+                      Text(
+                        r['status'],
+                        style: TextStyle(
+                          color: _getStatusColor(r['status']),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            Text(
+              _formatDateTime(r['created_at']),
+              style: const TextStyle(fontSize: 11),
+            ),
+          ],
+        ),
       ),
     );
   }
-
   // ================= HELPERS =================
 
   Color _getStatusColor(String status) {
     switch (status) {
       case "accepted":
-        return Colors.green;
+        return Colors.blue;
       case "rejected":
         return Colors.red;
       default:
@@ -228,9 +252,22 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
     }
   }
 
-  String _formatDate(String date) {
-    final dt = DateTime.parse(date);
+  // ✅ UPDATED: Date + Time (AM/PM format)
+  String _formatDateTime(String date) {
+    final dt = DateTime.parse(date).toLocal();
 
-    return "${dt.day}/${dt.month}/${dt.year}";
+    final day = "${dt.day}/${dt.month}/${dt.year}";
+
+    int hour = dt.hour;
+    final minute = dt.minute.toString().padLeft(2, '0');
+
+    String period = hour >= 12 ? "PM" : "AM";
+
+    hour = hour % 12;
+    if (hour == 0) hour = 12; // 0 হলে 12 show করবে
+
+    final time = "$hour:$minute $period";
+
+    return "$day\n$time"; // Date এর নিচে AM/PM time দেখাবে
   }
 }

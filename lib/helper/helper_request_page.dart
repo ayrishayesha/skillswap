@@ -87,7 +87,7 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : requests.isEmpty
-          ? const Center(child: Text("No requests yet"))
+          ? const Center(child: Text("No notification yet"))
           : RefreshIndicator(
               onRefresh: fetchRequests,
               child: ListView.builder(
@@ -240,7 +240,7 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
   Color getStatusColor(String status) {
     switch (status) {
       case "accepted":
-        return Colors.green;
+        return Colors.blue;
       case "rejected":
         return Colors.red;
       default:

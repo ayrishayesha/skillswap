@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/request_details.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LearnerNotificationPage extends StatefulWidget {
@@ -148,88 +149,102 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
 
   // ================= CARD =================
   Widget notificationCard(Map r, Map helper) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 6)],
-      ),
-
-      child: Row(
-        children: [
-          /// Avatar
-          CircleAvatar(
-            radius: 24,
-            backgroundImage:
-                helper['avatar_url'] != null &&
-                    helper['avatar_url'].toString().isNotEmpty
-                ? NetworkImage(helper['avatar_url'])
-                : null,
-            child: helper['avatar_url'] == null
-                ? const Icon(Icons.person)
-                : null,
+    return GestureDetector(
+      // ✅ ADDED: clickable
+      onTap: () {
+        // ✅ Navigate to Request Details Page
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RequestDetailsPage(
+              requestId: r['id'],
+            ), // request id পাঠানো হচ্ছে
           ),
+        );
+      },
 
-          const SizedBox(width: 12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
 
-          /// Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  helper['full_name'] ?? '',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 6)],
+        ),
 
-                const SizedBox(height: 4),
-
-                Text(
-                  getMessage(r['status']),
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: getStatusColor(r['status']),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-                Text(
-                  formatDate(r['created_at']),
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
-                ),
-              ],
+        child: Row(
+          children: [
+            /// Avatar
+            CircleAvatar(
+              radius: 24,
+              backgroundImage:
+                  helper['avatar_url'] != null &&
+                      helper['avatar_url'].toString().isNotEmpty
+                  ? NetworkImage(helper['avatar_url'])
+                  : null,
+              child: helper['avatar_url'] == null
+                  ? const Icon(Icons.person)
+                  : null,
             ),
-          ),
 
-          /// Status Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: getStatusColor(r['status']).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              r['status'].toString().toUpperCase(),
-              style: TextStyle(
-                fontSize: 11,
-                color: getStatusColor(r['status']),
-                fontWeight: FontWeight.bold,
+            const SizedBox(width: 12),
+
+            /// Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    helper['full_name'] ?? '',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+
+                  const SizedBox(height: 4),
+
+                  Text(
+                    getMessage(r['status']),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: getStatusColor(r['status']),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+
+                  const SizedBox(height: 4),
+
+                  Text(
+                    _formatDateTime(r['created_at']),
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+
+            /// Status Badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: getStatusColor(r['status']).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                r['status'].toString().toUpperCase(),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: getStatusColor(r['status']),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
-
   // ================= HELPERS =================
 
   String getMessage(String status) {
@@ -245,7 +260,7 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
   Color getStatusColor(String status) {
     switch (status) {
       case "accepted":
-        return Colors.green;
+        return Colors.blue;
       case "rejected":
         return Colors.red;
       default:
@@ -253,9 +268,21 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
     }
   }
 
-  String formatDate(String date) {
-    final dt = DateTime.parse(date);
+  String _formatDateTime(String date) {
+    final dt = DateTime.parse(date).toLocal();
 
-    return "${dt.day}/${dt.month}/${dt.year}";
+    final day = "${dt.day}/${dt.month}/${dt.year}";
+
+    int hour = dt.hour;
+    final minute = dt.minute.toString().padLeft(2, '0');
+
+    String period = hour >= 12 ? "PM" : "AM";
+
+    hour = hour % 12;
+    if (hour == 0) hour = 12; // 0 হলে 12 show করবে
+
+    final time = "$hour:$minute $period";
+
+    return "$day\n$time"; // Date এর নিচে AM/PM time দেখাবে
   }
 }
