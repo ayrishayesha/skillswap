@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:my_app/request_details.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class HelperNotificationPage extends StatefulWidget {
-  const HelperNotificationPage({super.key});
+class HelperRequestsPage extends StatefulWidget {
+  const HelperRequestsPage({super.key});
 
   @override
-  State<HelperNotificationPage> createState() => _HelperNotificationPageState();
+  State<HelperRequestsPage> createState() => _HelperRequestsPageState();
 }
 
-class _HelperNotificationPageState extends State<HelperNotificationPage> {
+class _HelperRequestsPageState extends State<HelperRequestsPage> {
   final supabase = Supabase.instance.client;
 
   List requests = [];

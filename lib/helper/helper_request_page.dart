@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class HelperRequestsPage extends StatefulWidget {
-  const HelperRequestsPage({super.key});
+class HelperNotificationPage extends StatefulWidget {
+  const HelperNotificationPage({super.key});
 
   @override
-  State<HelperRequestsPage> createState() => _HelperRequestsPageState();
+  State<HelperNotificationPage> createState() => _HelperNotificationPageState();
 }
 
-class _HelperRequestsPageState extends State<HelperRequestsPage> {
+class _HelperNotificationPageState extends State<HelperNotificationPage> {
   final supabase = Supabase.instance.client;
 
   List requests = [];
@@ -80,7 +80,10 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Helper Requests"), centerTitle: true),
+      appBar: AppBar(
+        title: const Text("Helper Notification"),
+        centerTitle: true,
+      ),
 
       backgroundColor: const Color(0xffF6F7FB),
 
