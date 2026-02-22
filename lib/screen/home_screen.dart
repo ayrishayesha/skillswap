@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/helper/helper_chat_home_page_.dart';
 import 'package:my_app/helper/helper_details_screen.dart';
 import 'package:my_app/helper/helper_notification_page.dart';
 import 'package:my_app/helper/helper_request_page.dart';
+import 'package:my_app/learner/learner_chat_home_page.dart';
+import 'package:my_app/learner/learner_request_page.dart';
 import 'package:my_app/screen/chats_screen.dart';
 import 'package:my_app/request/request_service.dart';
 import 'package:my_app/screen/leaener_notification_screen.dart';
-import 'package:my_app/screen/learner_request_page.dart';
 import 'package:my_app/screen/profile_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_app/helper/all_helper_view_screen.dart';
@@ -118,7 +120,12 @@ class _LearnerHomeState extends State<LearnerHome> {
                     ? const HelperRequestsPage()
                     : const LearnerRequestsPage()),
 
-          const ChatsPage(),
+          currentUserRole == null
+              ? const Center(child: CircularProgressIndicator())
+              : (currentUserRole == 'helper'
+                    ? const HelperChatHomePage()
+                    : const LearnerChatHomePage()),
+
           const Learner_Profile_Page(),
         ],
       ),

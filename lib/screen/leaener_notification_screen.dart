@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:my_app/request/request_accepted_page.dart';
 import 'package:my_app/request_details.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -224,28 +226,62 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
               ),
             ),
 
-            /// Status Badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: getStatusColor(r['status']).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                r['status'].toString().toUpperCase(),
-                style: TextStyle(
-                  fontSize: 11,
-                  color: getStatusColor(r['status']),
-                  fontWeight: FontWeight.bold,
+            /// Right Side (Status + View Button)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                /// Status Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: getStatusColor(r['status']).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    r['status'].toString().toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: getStatusColor(r['status']),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
+
+                const SizedBox(height: 6),
+
+                /// View Button
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RequestAcceptedPage(requestId: r['id']),
+                      ),
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text(
+                    "View",
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
   }
-  // ================= HELPERS =================
 
   String getMessage(String status) {
     if (status == "accepted") {
