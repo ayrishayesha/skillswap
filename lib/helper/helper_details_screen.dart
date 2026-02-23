@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/request/request_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HelperDetailsPage extends StatefulWidget {
@@ -17,6 +18,7 @@ class _HelperDetailsPageState extends State<HelperDetailsPage> {
 
   String name = "";
   String dept = "";
+  String bio = "";
   int batch = 0;
   String? avatarUrl;
   List<String> skills = [];
@@ -30,22 +32,23 @@ class _HelperDetailsPageState extends State<HelperDetailsPage> {
   /// -------- LOAD DATA FROM DATABASE ----------
   Future<void> loadHelperData() async {
     try {
-      final res = await supabase
+      final data = await supabase
           .from('profiles')
-          .select('full_name, department, batch, avatar_url, skills')
+          .select('full_name, department, batch, avatar_url, skills, bio')
           .eq('id', widget.helperId)
           .maybeSingle();
 
-      if (res != null) {
-        name = res['full_name'] ?? "";
-        dept = res['department'] ?? "";
-        batch = res['batch'] ?? 0;
-        avatarUrl = res['avatar_url'];
+      if (data != null) {
+        name = data['full_name'] ?? "";
+        dept = data['department'] ?? "";
+        batch = data['batch'] ?? 0;
+        avatarUrl = data['avatar_url'];
+        bio = data['bio'] ?? "";
 
-        final s = res['skills'];
+        final skill = data['skills'];
 
-        if (s != null && s is List) {
-          skills = s.map((e) => e.toString()).toList();
+        if (skill != null && skill is List) {
+          skills = skill.map((e) => e.toString()).toList();
         }
       }
     } catch (e) {
@@ -93,7 +96,7 @@ class _HelperDetailsPageState extends State<HelperDetailsPage> {
 
                   /// Dept + Batch
                   Text(
-                    "$dept, $batch Year",
+                    "$dept, $batch batch",
                     style: const TextStyle(color: Colors.grey, fontSize: 15),
                   ),
 
@@ -124,18 +127,6 @@ class _HelperDetailsPageState extends State<HelperDetailsPage> {
 
                   const SizedBox(height: 25),
 
-                  /// Stats
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      statBox("4.9", "Rating", Icons.star, Colors.orange),
-                      statBox("24", "Sessions", Icons.group, Colors.blue),
-                      statBox("Top", "Helper", Icons.verified, Colors.green),
-                    ],
-                  ),
-
-                  const SizedBox(height: 30),
-
                   /// Expertise
                   const Align(
                     alignment: Alignment.centerLeft,
@@ -148,7 +139,7 @@ class _HelperDetailsPageState extends State<HelperDetailsPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 5),
 
                   Wrap(
                     spacing: 10,
@@ -180,14 +171,13 @@ class _HelperDetailsPageState extends State<HelperDetailsPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 10),
-
-                  const Text(
-                    "Hi! I love helping others understand complex topics. "
-                    "I'm usually available in the evenings. Let's learn together!",
-                    style: TextStyle(color: Colors.grey),
+                  // const SizedBox(height: 5),
+                  Text(
+                    bio.isNotEmpty ? bio : "No bio added yet.",
+                    style: const TextStyle(
+                      color: Color.fromARGB(255, 72, 70, 70),
+                    ),
                   ),
-
                   const SizedBox(height: 30),
 
                   /// Button
@@ -201,10 +191,15 @@ class _HelperDetailsPageState extends State<HelperDetailsPage> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      onPressed: () {},
+                      onPressed: () {
+                        RequestService().showRequestPopup(
+                          context: context,
+                          helperId: widget.helperId,
+                        );
+                      },
                       icon: const Icon(Icons.handshake, color: Colors.white),
                       label: const Text(
-                        "Request Help",
+                        "Request",
                         style: TextStyle(fontSize: 17, color: Colors.white),
                       ),
                     ),

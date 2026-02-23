@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/helper/helper_details_screen.dart';
+import 'package:my_app/request/request_service.dart';
 
 class AllHelpersPage extends StatelessWidget {
   final List helpers;
@@ -16,10 +17,7 @@ class AllHelpersPage extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          "Python Helpers",
-          style: TextStyle(color: Colors.black),
-        ),
+        title: const Text("Helpers", style: TextStyle(color: Colors.black)),
         iconTheme: const IconThemeData(color: Colors.black),
       ),
 
@@ -197,13 +195,15 @@ class HelperCard extends StatelessWidget {
                     ),
                   ),
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Request feature coming soon"),
-                      ),
+                    RequestService().showRequestPopup(
+                      context: context,
+                      helperId: helper['id'],
                     );
                   },
-                  child: const Text("Request Help"),
+                  child: const Text(
+                    "Request",
+                    style: TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
+                  ),
                 ),
               ),
             ],

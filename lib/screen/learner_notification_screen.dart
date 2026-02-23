@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:my_app/request/request_accepted_page.dart';
 import 'package:my_app/request_details.dart';
@@ -20,12 +19,18 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
 
   RealtimeChannel? channel;
 
+  // ================= INIT =================
   @override
   void initState() {
     super.initState();
 
-    fetchRequests();
-    listenRealtime(); // 🔔 Realtime Listener
+    initNotificationSystem();
+  }
+
+  Future<void> initNotificationSystem() async {
+    await fetchRequests(); // First load
+    markAllSeen(); // Clear badge
+    startRealtime(); // Live listen
   }
 
   @override
@@ -37,7 +42,6 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
   // ================= FETCH =================
   Future<void> fetchRequests() async {
     final user = supabase.auth.currentUser;
-
     if (user == null) return;
 
     try {
@@ -59,43 +63,67 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
           .eq('learner_id', user.id)
           .order('created_at', ascending: false);
 
+      if (!mounted) return;
+
       setState(() {
         requests = data;
         loading = false;
       });
     } catch (e) {
-      print("FETCH ERROR => $e");
+      debugPrint("FETCH ERROR => $e");
+
+      if (!mounted) return;
+
       setState(() => loading = false);
     }
   }
 
   // ================= REALTIME =================
-  void listenRealtime() {
+  void startRealtime() {
     final user = supabase.auth.currentUser;
-
     if (user == null) return;
 
     channel = supabase
-        .channel('learner-notification')
+        .channel('learner-notification-global')
         .onPostgresChanges(
-          event: PostgresChangeEvent.update,
+          event: PostgresChangeEvent.all, // ✅ IMPORTANT
           schema: 'public',
           table: 'request',
           callback: (payload) {
             final newData = payload.newRecord;
 
-            // Check if this update is for this learner
             if (newData['learner_id'] == user.id) {
+              fetchRequests();
+
               final status = newData['status'];
 
               if (status == 'accepted' || status == 'rejected') {
-                fetchRequests();
+                markSingleUnseen(newData['id']);
                 showPopup(status);
               }
             }
           },
         )
         .subscribe();
+  }
+
+  // ================= SEEN SYSTEM =================
+
+  // Mark all as seen when open page
+  Future<void> markAllSeen() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    await supabase
+        .from('request')
+        .update({'is_seen': true})
+        .eq('learner_id', user.id)
+        .or('status.eq.accepted,status.eq.rejected');
+  }
+
+  // Mark single unseen for new notification
+  Future<void> markSingleUnseen(String id) async {
+    await supabase.from('request').update({'is_seen': false}).eq('id', id);
   }
 
   // ================= POPUP =================
@@ -113,7 +141,7 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: status == "accepted" ? Colors.green : Colors.red,
+        backgroundColor: status == "accepted" ? Colors.blue : Colors.red,
         duration: const Duration(seconds: 3),
       ),
     );
@@ -152,15 +180,11 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
   // ================= CARD =================
   Widget notificationCard(Map r, Map helper) {
     return GestureDetector(
-      // ✅ ADDED: clickable
       onTap: () {
-        // ✅ Navigate to Request Details Page
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => RequestDetailsPage(
-              requestId: r['id'],
-            ), // request id পাঠানো হচ্ছে
+            builder: (context) => RequestDetailsPage(requestId: r['id']),
           ),
         );
       },
@@ -177,7 +201,6 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
 
         child: Row(
           children: [
-            /// Avatar
             CircleAvatar(
               radius: 24,
               backgroundImage:
@@ -192,7 +215,6 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
 
             const SizedBox(width: 12),
 
-            /// Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,11 +248,9 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
               ),
             ),
 
-            /// Right Side (Status + View Button)
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                /// Status Badge
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
@@ -252,7 +272,6 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
 
                 const SizedBox(height: 6),
 
-                /// View Button
                 TextButton(
                   onPressed: () {
                     Navigator.push(
@@ -283,6 +302,8 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
     );
   }
 
+  // ================= HELPERS =================
+
   String getMessage(String status) {
     if (status == "accepted") {
       return "Helper accepted your request";
@@ -305,20 +326,24 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
   }
 
   String _formatDateTime(String date) {
-    final dt = DateTime.parse(date).toLocal();
+    // Parse as UTC first
+    final dtUtc = DateTime.parse(date).toUtc();
 
-    final day = "${dt.day}/${dt.month}/${dt.year}";
+    // Convert to device's local timezone
+    final dtLocal = dtUtc.toLocal();
 
-    int hour = dt.hour;
-    final minute = dt.minute.toString().padLeft(2, '0');
+    final day = "${dtLocal.day}/${dtLocal.month}/${dtLocal.year}";
+
+    int hour = dtLocal.hour;
+    final minute = dtLocal.minute.toString().padLeft(2, '0');
 
     String period = hour >= 12 ? "PM" : "AM";
 
     hour = hour % 12;
-    if (hour == 0) hour = 12; // 0 হলে 12 show করবে
+    if (hour == 0) hour = 12;
 
     final time = "$hour:$minute $period";
 
-    return "$day\n$time"; // Date এর নিচে AM/PM time দেখাবে
+    return "$day\n$time";
   }
 }

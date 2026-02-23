@@ -18,6 +18,9 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
   bool loading = true;
   bool updating = false;
 
+  bool isHelper = false;
+  bool isLearner = false;
+
   @override
   void initState() {
     super.initState();
@@ -26,6 +29,8 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
 
   // ================= FETCH DATA =================
   Future<void> fetchRequestDetails() async {
+    final user = supabase.auth.currentUser;
+
     final data = await supabase
         .from('request')
         .select('''
@@ -36,8 +41,18 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
           status,
           attachment_url,
           created_at,
+          helper_id,
+          learner_id,
 
           helper:profiles!helper_id (
+            id,
+            full_name,
+            department,
+            batch,
+            avatar_url
+          ),
+
+          learner:profiles!learner_id (
             id,
             full_name,
             department,
@@ -47,6 +62,15 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
         ''')
         .eq('id', widget.requestId)
         .single();
+
+    // detect role
+    if (user != null) {
+      if (user.id == data['helper_id']) {
+        isHelper = true;
+      } else if (user.id == data['learner_id']) {
+        isLearner = true;
+      }
+    }
 
     setState(() {
       request = data;
@@ -70,7 +94,7 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("Request $newStatus successfully"),
-        backgroundColor: newStatus == "accepted" ? Colors.green : Colors.red,
+        backgroundColor: newStatus == "accepted" ? Colors.blue : Colors.red,
       ),
     );
   }
@@ -78,7 +102,6 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
   // ================= DOWNLOAD FILE =================
   Future<void> downloadFile(String url) async {
     final uri = Uri.parse(url);
-
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
@@ -104,7 +127,7 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
   }
 
   Widget buildBody() {
-    final helper = request!['helper'];
+    final profile = isHelper ? request!['learner'] : request!['helper'];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -120,83 +143,47 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
                 BoxShadow(color: Colors.grey.shade200, blurRadius: 10),
               ],
             ),
-            child: Column(
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 32,
-                      backgroundImage:
-                          helper['avatar_url'] != null &&
-                              helper['avatar_url'].toString().isNotEmpty
-                          ? NetworkImage(helper['avatar_url'])
-                          : null,
-                      child: helper['avatar_url'] == null
-                          ? const Icon(Icons.person, size: 30)
-                          : null,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            helper['full_name'] ?? '',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "${helper['department']} • ${helper['batch']} Year",
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // STATUS BADGE
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _statusColor(
-                          request!['status'],
-                        ).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        request!['status'].toUpperCase(),
-                        style: TextStyle(
-                          color: _statusColor(request!['status']),
+                CircleAvatar(
+                  radius: 32,
+                  backgroundImage:
+                      profile['avatar_url'] != null &&
+                          profile['avatar_url'].toString().isNotEmpty
+                      ? NetworkImage(profile['avatar_url'])
+                      : null,
+                  child: profile['avatar_url'] == null
+                      ? const Icon(Icons.person, size: 30)
+                      : null,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        profile['full_name'] ?? '',
+                        style: const TextStyle(
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-                Divider(color: Colors.grey.shade300),
-                const SizedBox(height: 8),
-
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Posted ${_formatDateTime(request!['created_at'])}",
-                    style: const TextStyle(color: Colors.grey),
+                      const SizedBox(height: 4),
+                      Text(
+                        "${profile['department']} • ${profile['batch']} batch",
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                    ],
                   ),
                 ),
+                _statusBadge(request!['status']),
               ],
             ),
           ),
 
           const SizedBox(height: 20),
 
-          // ================= DETAILS CARD =================
+          // ================= DETAILS =================
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -206,28 +193,8 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // SUBJECT BADGE
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade100,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    request!['subject'] ?? '',
-                    style: const TextStyle(
-                      color: Colors.orange,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-
+                _subjectBadge(request!['subject']),
                 const SizedBox(height: 16),
-
-                // TITLE
                 Text(
                   request!['title'] ?? '',
                   style: const TextStyle(
@@ -235,52 +202,44 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-
                 const SizedBox(height: 16),
-
-                // DESCRIPTION
                 Text(
                   request!['description'] ?? '',
                   style: const TextStyle(fontSize: 16, height: 1.5),
                 ),
-
-                const SizedBox(height: 24),
-
-                const Text(
-                  "ATTACHMENT",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
-                  ),
+                const SizedBox(height: 20),
+                Text(
+                  "Posted ${_formatDateTime(request!['created_at'])}",
+                  style: const TextStyle(color: Colors.grey),
                 ),
-
-                const SizedBox(height: 10),
-
+                const SizedBox(height: 20),
+                // ================= ATTACHMENT =================
+                // ================= ATTACHMENT =================
+                // ================= ATTACHMENT =================
                 if (request!['attachment_url'] != null &&
-                    request!['attachment_url'] != '')
-                  InkWell(
-                    onTap: () => downloadFile(request!['attachment_url']),
-                    child: Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.insert_drive_file, size: 40),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              request!['attachment_url']
-                                  .toString()
-                                  .split('/')
-                                  .last,
+                    request!['attachment_url'].toString().isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.attach_file, color: Colors.grey),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "Attachment",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
                             ),
                           ),
-                          const Icon(Icons.download),
-                        ],
-                      ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.download, color: Colors.green),
+                          onPressed: () =>
+                              downloadFile(request!['attachment_url']),
+                          tooltip: "Download",
+                        ),
+                      ],
                     ),
                   ),
               ],
@@ -289,8 +248,8 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
 
           const SizedBox(height: 30),
 
-          // ================= ACCEPT BUTTON =================
-          if (request!['status'] == "pending")
+          // ================= BUTTONS (ONLY HELPER CAN SEE) =================
+          if (isHelper && request!['status'] == "pending")
             Column(
               children: [
                 SizedBox(
@@ -307,18 +266,14 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
                     child: updating
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
-                            "Accept Request →",
+                            "Accept Request",
                             style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              color: Color.fromARGB(255, 255, 255, 255),
                             ),
                           ),
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
-                // ================= REJECT BUTTON =================
                 SizedBox(
                   width: double.infinity,
                   height: 55,
@@ -332,10 +287,7 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
                     ),
                     child: const Text(
                       "Reject Request",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(color: Colors.red),
                     ),
                   ),
                 ),
@@ -346,10 +298,44 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
     );
   }
 
+  Widget _statusBadge(String status) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: _statusColor(status).withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        status.toUpperCase(),
+        style: TextStyle(
+          color: _statusColor(status),
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _subjectBadge(String subject) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade100,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        subject,
+        style: const TextStyle(
+          color: Colors.orange,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
   Color _statusColor(String status) {
     switch (status) {
       case "accepted":
-        return Colors.green;
+        return Colors.blue;
       case "rejected":
         return Colors.red;
       default:
@@ -359,13 +345,11 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
 
   String _formatDateTime(String date) {
     final dt = DateTime.parse(date).toLocal();
-
     int hour = dt.hour;
     final minute = dt.minute.toString().padLeft(2, '0');
     String period = hour >= 12 ? "PM" : "AM";
     hour = hour % 12;
     if (hour == 0) hour = 12;
-
     return "${dt.day}/${dt.month}/${dt.year}  $hour:$minute $period";
   }
 }

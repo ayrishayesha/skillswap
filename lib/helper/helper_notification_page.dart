@@ -1,3 +1,5 @@
+// helper_notification_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -13,11 +15,13 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
 
   List requests = [];
   bool loading = true;
+  RealtimeChannel? notificationChannel;
 
   @override
   void initState() {
     super.initState();
     fetchRequests();
+    listenRealtimeNotification(); // ✅ new realtime listener
   }
 
   // ================= FETCH =================
@@ -76,6 +80,48 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
     }
   }
 
+  // ================= REALTIME =================
+  void listenRealtimeNotification() {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    notificationChannel = supabase
+        .channel('helper-global-notification')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'request',
+          callback: (payload) {
+            final newData = payload.newRecord;
+
+            // Only show if this helper is the recipient
+            if (newData['helper_id'] == user.id) {
+              fetchRequests();
+
+              // ✅ Snackbar at top
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.only(top: 10, left: 16, right: 16),
+                  backgroundColor: Colors.blue,
+                  content: const Text(
+                    "You have a new request.please check your request screen to accept or reject the request",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              );
+            }
+          },
+        )
+        .subscribe();
+  }
+
+  @override
+  void dispose() {
+    notificationChannel?.unsubscribe();
+    super.dispose();
+  }
+
   // ================= UI =================
   @override
   Widget build(BuildContext context) {
@@ -84,9 +130,7 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
         title: const Text("Helper Notification"),
         centerTitle: true,
       ),
-
       backgroundColor: const Color(0xffF6F7FB),
-
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : requests.isEmpty
@@ -100,9 +144,7 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
                   final r = requests[index];
                   final learner = r['learner'];
 
-                  if (learner == null) {
-                    return const SizedBox();
-                  }
+                  if (learner == null) return const SizedBox();
 
                   return requestCard(r, learner);
                 },
@@ -118,18 +160,15 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
-
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 6)],
       ),
-
       child: Column(
         children: [
           Row(
             children: [
-              /// Avatar
               CircleAvatar(
                 radius: 24,
                 backgroundImage:
@@ -141,10 +180,7 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
                     ? const Icon(Icons.person)
                     : null,
               ),
-
               const SizedBox(width: 12),
-
-              /// Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,16 +192,12 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
                         fontSize: 15,
                       ),
                     ),
-
                     const SizedBox(height: 4),
-
                     Text(
                       "${learner['department'] ?? ''} | ${learner['batch'] ?? ''}",
                       style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
-
                     const SizedBox(height: 4),
-
                     Text(
                       "Status: ${status.toString().toUpperCase()}",
                       style: TextStyle(
@@ -179,35 +211,30 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
               ),
             ],
           ),
-
           const SizedBox(height: 12),
-
-          /// Buttons
           if (status == "pending")
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      updateStatus(r['id'], "accepted");
-                    },
-                    icon: const Icon(Icons.check),
-                    label: const Text("Accept"),
+                    onPressed: () => updateStatus(r['id'], "accepted"),
+                    label: const Text(
+                      "Accept",
+                      style: TextStyle(color: Colors.white),
+                    ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: Colors.blue,
                     ),
                   ),
                 ),
-
                 const SizedBox(width: 10),
-
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      updateStatus(r['id'], "rejected");
-                    },
-                    icon: const Icon(Icons.close),
-                    label: const Text("Reject"),
+                    onPressed: () => updateStatus(r['id'], "rejected"),
+                    label: const Text(
+                      "Reject",
+                      style: TextStyle(color: Colors.white),
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                     ),
@@ -215,8 +242,6 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
                 ),
               ],
             ),
-
-          /// If already accepted/rejected
           if (status != "pending")
             Container(
               width: double.infinity,

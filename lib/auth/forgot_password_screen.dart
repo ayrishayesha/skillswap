@@ -101,22 +101,25 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 const SizedBox(height: 32),
 
                 // Info Box
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.green.shade200),
-                  ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("What happens next?"),
-                      SizedBox(height: 6),
-                      Text("1. We will send a reset token"),
-                      Text("2. Check your inbox"),
-                      Text("3. Use token on next screen"),
-                    ],
+                Align(
+                  alignment: Alignment.center,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("What happens next?"),
+                        SizedBox(height: 6),
+                        Text("1. We will send a reset token"),
+                        Text("2. Check your inbox"),
+                        Text("3. Use token on next screen"),
+                      ],
+                    ),
                   ),
                 ),
               ],

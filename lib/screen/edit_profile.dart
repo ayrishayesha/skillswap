@@ -18,6 +18,7 @@ class _EditProfileState extends State<EditProfile> {
   final emailController = TextEditingController();
   final deptController = TextEditingController();
   final batchController = TextEditingController();
+  final bioController = TextEditingController();
 
   Uint8List? imageBytes;
   XFile? pickedFile;
@@ -42,7 +43,7 @@ class _EditProfileState extends State<EditProfile> {
 
       final res = await supabase
           .from('profiles')
-          .select('full_name, department, batch, avatar_url')
+          .select('full_name, department, batch, avatar_url, bio')
           .eq('id', user.id)
           .maybeSingle();
 
@@ -51,6 +52,7 @@ class _EditProfileState extends State<EditProfile> {
         deptController.text = res['department'] ?? '';
         batchController.text = res['batch']?.toString() ?? '';
         existingAvatarUrl = res['avatar_url'];
+        bioController.text = res['bio'] ?? '';
       }
     } catch (e) {
       debugPrint("Load error: $e");
@@ -114,6 +116,7 @@ class _EditProfileState extends State<EditProfile> {
         'department': deptController.text.trim(),
         'batch': int.tryParse(batchController.text.trim()),
         'avatar_url': imageUrl ?? existingProfile?['avatar_url'],
+        'bio': bioController.text.trim(),
         'updated_at': DateTime.now().toIso8601String(),
       }, onConflict: 'id');
 
@@ -151,6 +154,7 @@ class _EditProfileState extends State<EditProfile> {
     emailController.dispose();
     deptController.dispose();
     batchController.dispose();
+    bioController.dispose();
     super.dispose();
   }
 
@@ -236,6 +240,11 @@ class _EditProfileState extends State<EditProfile> {
                   buildLabel("BATCH"),
                   const SizedBox(height: 5),
                   buildField(batchController, isNumber: true),
+                  const SizedBox(height: 20),
+                  buildLabel("BIO"),
+                  const SizedBox(height: 5),
+                  buildField(bioController),
+
                   const SizedBox(height: 30),
                   SizedBox(
                     width: double.infinity,

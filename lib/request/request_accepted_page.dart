@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/request_details.dart';
 import 'package:my_app/screen/chats_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -30,7 +31,7 @@ class _RequestAcceptedPageState extends State<RequestAcceptedPage> {
           .from('request')
           .select('''
             id,
-            subject,
+            title,
             status,
             learner_id,
             helper_id,
@@ -88,7 +89,7 @@ class _RequestAcceptedPageState extends State<RequestAcceptedPage> {
           ),
           const SizedBox(height: 8),
           const Text(
-            "Helper is ready to help you.",
+            "Your request has been picked up.",
             style: TextStyle(color: Colors.grey),
           ),
           const SizedBox(height: 30),
@@ -99,8 +100,11 @@ class _RequestAcceptedPageState extends State<RequestAcceptedPage> {
             height: 50,
             child: ElevatedButton.icon(
               onPressed: _goToChat,
-              icon: const Icon(Icons.chat),
-              label: const Text("Go to Chat", style: TextStyle(fontSize: 16)),
+              icon: const Icon(Icons.chat, color: Colors.white),
+              label: const Text(
+                "Go to Chat",
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 shape: RoundedRectangleBorder(
@@ -110,6 +114,29 @@ class _RequestAcceptedPageState extends State<RequestAcceptedPage> {
             ),
           ),
           const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton.icon(
+              onPressed: _goToDetails,
+              label: const Text(
+                "View Request Details",
+
+                style: TextStyle(
+                  color: Color.fromARGB(255, 74, 72, 72),
+                  fontSize: 16,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
         ],
       ),
     );
@@ -149,8 +176,22 @@ class _RequestAcceptedPageState extends State<RequestAcceptedPage> {
           ),
           const Divider(height: 30),
           Text(
-            'Subject: ${requestData?['subject'] ?? ''}',
-            style: const TextStyle(fontSize: 14),
+            "${helperData?['full_name']} is ready to help you with your request.",
+            textAlign: TextAlign.center,
+
+            style: const TextStyle(
+              color: Color.fromARGB(255, 52, 50, 50),
+              fontSize: 15,
+            ),
+          ),
+          Text(
+            '"${requestData?['title'] ?? ''}"',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue,
+            ),
           ),
         ],
       ),
@@ -167,6 +208,15 @@ class _RequestAcceptedPageState extends State<RequestAcceptedPage> {
           otherUserId: requestData!['helper_id'],
           otherUserName: helperData!['full_name'],
         ),
+      ),
+    );
+  }
+
+  void _goToDetails() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RequestDetailsPage(requestId: requestData!['id']),
       ),
     );
   }

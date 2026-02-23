@@ -5,12 +5,11 @@ import 'package:my_app/helper/helper_notification_page.dart';
 import 'package:my_app/helper/helper_request_page.dart';
 import 'package:my_app/learner/learner_chat_home_page.dart';
 import 'package:my_app/learner/learner_request_page.dart';
-import 'package:my_app/screen/chats_screen.dart';
-import 'package:my_app/request/request_service.dart';
-import 'package:my_app/screen/leaener_notification_screen.dart';
+import 'package:my_app/screen/learner_notification_screen.dart';
 import 'package:my_app/screen/profile_page.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_app/helper/all_helper_view_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:my_app/request/request_service.dart';
 
 class LearnerHome extends StatefulWidget {
   const LearnerHome({super.key});
@@ -23,12 +22,13 @@ class _LearnerHomeState extends State<LearnerHome> {
   final supabase = Supabase.instance.client;
 
   int currentIndex = 0;
+  String? currentUserRole;
 
   List helpers = [];
   List allHelpers = [];
 
-  // ✅ CHANGED: Role variable add করা হয়েছে
-  String? currentUserRole;
+  int unreadCount = 0;
+  RealtimeChannel? notificationChannel;
 
   String selectedFilter = "All";
   TextEditingController searchController = TextEditingController();
@@ -36,27 +36,29 @@ class _LearnerHomeState extends State<LearnerHome> {
   @override
   void initState() {
     super.initState();
-    fetchCurrentUserRole(); // ✅ CHANGED
+    fetchCurrentUserRole();
     fetchHelpers();
+    fetchUnreadCount();
+    listenGlobalNotification();
   }
 
-  // ✅ CHANGED: Current user role fetch function
+  // ================= CURRENT USER ROLE =================
   Future<void> fetchCurrentUserRole() async {
     final user = supabase.auth.currentUser;
+    if (user == null) return;
 
-    if (user != null) {
-      final data = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
+    final data = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
 
-      setState(() {
-        currentUserRole = data['role'];
-      });
-    }
+    setState(() {
+      currentUserRole = data['role'];
+    });
   }
 
+  // ================= HELPERS =================
   Future<void> fetchHelpers() async {
     final data = await supabase
         .from('profiles')
@@ -70,10 +72,97 @@ class _LearnerHomeState extends State<LearnerHome> {
     });
   }
 
+  // ================= UNREAD COUNT =================
+  Future<void> fetchUnreadCount() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    if (currentUserRole == 'learner') {
+      final data = await supabase
+          .from('request')
+          .select()
+          .eq('learner_id', user.id)
+          .inFilter('status', ['accepted', 'rejected'])
+          .eq('is_seen', false);
+
+      setState(() {
+        unreadCount = data.length;
+      });
+    } else if (currentUserRole == 'helper') {
+      final data = await supabase
+          .from('request')
+          .select()
+          .eq('helper_id', user.id)
+          .eq('status', 'pending')
+          .eq('is_seen', false);
+
+      setState(() {
+        unreadCount = data.length;
+      });
+    }
+  }
+
+  // ================= REALTIME NOTIFICATION =================
+  void listenGlobalNotification() {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    notificationChannel = supabase
+        .channel('global-notification')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'request',
+          callback: (payload) {
+            final newData = payload.newRecord;
+
+            if (currentUserRole == 'learner' &&
+                newData['learner_id'] == user.id &&
+                (newData['status'] == 'accepted' ||
+                    newData['status'] == 'rejected')) {
+              fetchUnreadCount();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    "Tumaar request ${newData['status'].toString().toUpperCase()} hoyeche",
+                  ),
+                  backgroundColor: newData['status'] == 'accepted'
+                      ? Colors.blue
+                      : Colors.red,
+                  behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.only(top: 10, left: 16, right: 16),
+                ),
+              );
+            }
+
+            if (currentUserRole == 'helper' &&
+                newData['helper_id'] == user.id &&
+                newData['status'] == 'pending') {
+              fetchUnreadCount();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Tumaar ekta new request ase"),
+                  backgroundColor: Colors.blue,
+                  behavior: SnackBarBehavior.floating,
+                  margin: EdgeInsets.only(top: 10, left: 16, right: 16),
+                ),
+              );
+            }
+          },
+        )
+        .subscribe();
+  }
+
+  @override
+  void dispose() {
+    notificationChannel?.unsubscribe();
+    super.dispose();
+  }
+
+  // ================= FILTER & SEARCH =================
   void applyFilter() {
     List filtered = allHelpers;
 
-    // Filter by chip
     if (selectedFilter != "All") {
       filtered = filtered.where((h) {
         final skills = (h['skills'] as List?) ?? [];
@@ -83,7 +172,6 @@ class _LearnerHomeState extends State<LearnerHome> {
       }).toList();
     }
 
-    // Search by name OR skill
     if (searchController.text.isNotEmpty) {
       final query = searchController.text.toLowerCase();
 
@@ -104,6 +192,7 @@ class _LearnerHomeState extends State<LearnerHome> {
     });
   }
 
+  // ================= BUILD =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -112,20 +201,16 @@ class _LearnerHomeState extends State<LearnerHome> {
         index: currentIndex,
         children: [
           homeScreen(),
-
-          // ✅ CHANGED: Role based Requests Page
           currentUserRole == null
               ? const Center(child: CircularProgressIndicator())
               : (currentUserRole == 'helper'
                     ? const HelperRequestsPage()
                     : const LearnerRequestsPage()),
-
           currentUserRole == null
               ? const Center(child: CircularProgressIndicator())
               : (currentUserRole == 'helper'
                     ? const HelperChatHomePage()
                     : const LearnerChatHomePage()),
-
           const Learner_Profile_Page(),
         ],
       ),
@@ -154,13 +239,11 @@ class _LearnerHomeState extends State<LearnerHome> {
     );
   }
 
-  // ================= HOME =================
-
+  // ================= HOME SCREEN =================
   Widget homeScreen() {
     return SafeArea(
       child: Column(
         children: [
-          /// APP BAR
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -172,7 +255,6 @@ class _LearnerHomeState extends State<LearnerHome> {
                 ),
                 Stack(
                   children: [
-                    // ✅ CHANGED: Role based Notification navigation
                     IconButton(
                       icon: const Icon(Icons.notifications_none),
                       onPressed: () {
@@ -191,21 +273,29 @@ class _LearnerHomeState extends State<LearnerHome> {
                             ),
                           );
                         }
+                        fetchUnreadCount();
                       },
                     ),
-
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
+                    if (unreadCount > 0)
+                      Positioned(
+                        right: 6,
+                        top: 6,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            unreadCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ],
@@ -224,29 +314,14 @@ class _LearnerHomeState extends State<LearnerHome> {
               child: TextField(
                 controller: searchController,
                 onSubmitted: (value) {
-                  final query = value.toLowerCase();
-
-                  final filtered = allHelpers.where((h) {
-                    final name = (h['full_name'] ?? '')
-                        .toString()
-                        .toLowerCase();
-                    final skills = (h['skills'] as List?) ?? [];
-
-                    final skillMatch = skills.any(
-                      (s) => s.toString().toLowerCase().contains(query),
-                    );
-
-                    return name.contains(query) || skillMatch;
-                  }).toList();
-
+                  applyFilter();
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => AllHelpersPage(helpers: filtered),
+                      builder: (_) => AllHelpersPage(helpers: helpers),
                     ),
                   );
                 },
-
                 decoration: const InputDecoration(
                   border: InputBorder.none,
                   icon: Icon(Icons.search),
@@ -255,7 +330,6 @@ class _LearnerHomeState extends State<LearnerHome> {
               ),
             ),
           ),
-
           const SizedBox(height: 12),
 
           /// FILTER CHIPS
@@ -320,33 +394,12 @@ class _LearnerHomeState extends State<LearnerHome> {
                     },
                   ),
           ),
-
-          const SizedBox(height: 12),
-
-          /// RECENTLY ACTIVE
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                const Text(
-                  "Recently Active",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                recentTile("Mike T.", "DBMS", true),
-                recentTile("Emily R.", "OS Design", false),
-                recentTile("John D.", "ReactJS", false),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
         ],
       ),
     );
   }
 
   // ================= COMPONENTS =================
-
   Widget filterChip(String text) {
     final bool active = selectedFilter == text;
 
@@ -383,22 +436,13 @@ class _LearnerHomeState extends State<LearnerHome> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.shade200,
-              blurRadius: 10,
-              spreadRadius: 2,
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 10)],
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            /// Avatar + Rating
             InkWell(
               borderRadius: BorderRadius.circular(20),
               onTap: () {
-                // Only card area (not button) navigates to details
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -408,35 +452,16 @@ class _LearnerHomeState extends State<LearnerHome> {
               },
               child: Column(
                 children: [
-                  Stack(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [Colors.blue, Colors.purple],
-                          ),
-                        ),
-                        child: CircleAvatar(
-                          radius: 38,
-                          backgroundColor: Colors.white,
-                          child: CircleAvatar(
-                            radius: 34,
-                            backgroundImage:
-                                h['avatar_url'] != null &&
-                                    h['avatar_url'].toString().isNotEmpty
-                                ? NetworkImage(h['avatar_url'])
-                                : null,
-                            child:
-                                h['avatar_url'] == null ||
-                                    h['avatar_url'].toString().isEmpty
-                                ? const Icon(Icons.person, size: 30)
-                                : null,
-                          ),
-                        ),
-                      ),
-                    ],
+                  CircleAvatar(
+                    radius: 38,
+                    backgroundImage:
+                        h['avatar_url'] != null &&
+                            h['avatar_url'].toString().isNotEmpty
+                        ? NetworkImage(h['avatar_url'])
+                        : null,
+                    child: h['avatar_url'] == null
+                        ? const Icon(Icons.person, size: 30)
+                        : null,
                   ),
                   const SizedBox(height: 10),
                   Text(
@@ -473,82 +498,30 @@ class _LearnerHomeState extends State<LearnerHome> {
                 ],
               ),
             ),
-
             const SizedBox(height: 8),
-
-            // ================= BUTTON =================
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
                 onPressed: () {
                   RequestService().showRequestPopup(
                     context: context,
                     helperId: h['id'],
                   );
                 },
-
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
                 child: const Text(
                   "Request",
-                  style: TextStyle(color: Color.fromARGB(249, 255, 255, 255)),
+                  style: TextStyle(color: Colors.white),
                 ),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget recentTile(String name, String skill, bool online) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Stack(
-            children: [
-              const CircleAvatar(radius: 22, child: Icon(Icons.person)),
-              if (online)
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text(
-                  "Helping with $skill",
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          ElevatedButton(onPressed: () {}, child: const Text("Request")),
-        ],
       ),
     );
   }
