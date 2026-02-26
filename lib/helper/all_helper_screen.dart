@@ -16,7 +16,7 @@ class AllHelpersPage extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        title: const Text("Helpers", style: TextStyle(color: Colors.black)),
+        title: const Text("Mentors", style: TextStyle(color: Colors.black)),
         iconTheme: const IconThemeData(color: Colors.black),
       ),
 
@@ -26,14 +26,14 @@ class AllHelpersPage extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
             child: Text(
-              "${helpers.length} Helpers available",
+              "${helpers.length} Mentors available",
               style: const TextStyle(color: Colors.grey, fontSize: 14),
             ),
           ),
 
           Expanded(
             child: helpers.isEmpty
-                ? const Center(child: Text("No helpers found"))
+                ? const Center(child: Text("No Mentors found"))
                 : ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: helpers.length,
