@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:my_app/screen/profile_page.dart';
+import 'package:my_app/profile/profile_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class EditProfile extends StatefulWidget {
@@ -122,7 +122,6 @@ class _EditProfileState extends State<EditProfile> {
 
       if (!mounted) return;
 
-      // <-- NEW: Show success SnackBar
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Profile updated successfully!"),
@@ -131,7 +130,6 @@ class _EditProfileState extends State<EditProfile> {
         ),
       );
 
-      // <-- NEW: Navigate back to Profile page after save
       Future.delayed(const Duration(seconds: 2), () {
         if (!mounted) return;
         Navigator.pushReplacement(

@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/helper/helper_chat_home_page_.dart';
 import 'package:my_app/helper/helper_details_screen.dart';
 import 'package:my_app/helper/helper_notification_page.dart';
 import 'package:my_app/helper/helper_request_page.dart';
-import 'package:my_app/learner/learner_chat_home_page.dart';
+
 import 'package:my_app/learner/learner_request_page.dart';
-import 'package:my_app/screen/learner_notification_screen.dart';
-import 'package:my_app/screen/profile_page.dart';
-import 'package:my_app/helper/all_helper_view_screen.dart';
+import 'package:my_app/screen/caht_home_screen.dart';
+import 'package:my_app/learner/learner_notification_screen.dart';
+import 'package:my_app/profile/profile_page.dart';
+import 'package:my_app/helper/all_helper_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_app/request/request_service.dart';
 
-class LearnerHome extends StatefulWidget {
-  const LearnerHome({super.key});
+class Homepage extends StatefulWidget {
+  const Homepage({super.key});
 
   @override
-  State<LearnerHome> createState() => _LearnerHomeState();
+  State<Homepage> createState() => _HomepageState();
 }
 
-class _LearnerHomeState extends State<LearnerHome> {
+class _HomepageState extends State<Homepage> {
   final supabase = Supabase.instance.client;
 
   int currentIndex = 0;
@@ -42,7 +42,6 @@ class _LearnerHomeState extends State<LearnerHome> {
     listenGlobalNotification();
   }
 
-  // ================= CURRENT USER ROLE =================
   Future<void> fetchCurrentUserRole() async {
     final user = supabase.auth.currentUser;
     if (user == null) return;
@@ -58,7 +57,6 @@ class _LearnerHomeState extends State<LearnerHome> {
     });
   }
 
-  // ================= HELPERS =================
   Future<void> fetchHelpers() async {
     final data = await supabase
         .from('profiles')
@@ -72,7 +70,6 @@ class _LearnerHomeState extends State<LearnerHome> {
     });
   }
 
-  // ================= UNREAD COUNT =================
   Future<void> fetchUnreadCount() async {
     final user = supabase.auth.currentUser;
     if (user == null) return;
@@ -102,7 +99,6 @@ class _LearnerHomeState extends State<LearnerHome> {
     }
   }
 
-  // ================= REALTIME NOTIFICATION =================
   void listenGlobalNotification() {
     final user = supabase.auth.currentUser;
     if (user == null) return;
@@ -124,7 +120,7 @@ class _LearnerHomeState extends State<LearnerHome> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    "Tumaar request ${newData['status'].toString().toUpperCase()} hoyeche",
+                    "Tumar request ${newData['status'].toString().toUpperCase()} hoyeche",
                   ),
                   backgroundColor: newData['status'] == 'accepted'
                       ? Colors.blue
@@ -141,7 +137,9 @@ class _LearnerHomeState extends State<LearnerHome> {
               fetchUnreadCount();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text("Tumaar ekta new request ase"),
+                  content: Text(
+                    "you have a new request.please check your request screen to accept or reject the request",
+                  ),
                   backgroundColor: Colors.blue,
                   behavior: SnackBarBehavior.floating,
                   margin: EdgeInsets.only(top: 10, left: 16, right: 16),
@@ -159,7 +157,6 @@ class _LearnerHomeState extends State<LearnerHome> {
     super.dispose();
   }
 
-  // ================= FILTER & SEARCH =================
   void applyFilter() {
     List filtered = allHelpers;
 
@@ -192,7 +189,6 @@ class _LearnerHomeState extends State<LearnerHome> {
     });
   }
 
-  // ================= BUILD =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -206,11 +202,10 @@ class _LearnerHomeState extends State<LearnerHome> {
               : (currentUserRole == 'helper'
                     ? const HelperRequestsPage()
                     : const LearnerRequestsPage()),
+
           currentUserRole == null
               ? const Center(child: CircularProgressIndicator())
-              : (currentUserRole == 'helper'
-                    ? const HelperChatHomePage()
-                    : const LearnerChatHomePage()),
+              : ChatHomePage(isHelper: currentUserRole == 'helper'),
           const Learner_Profile_Page(),
         ],
       ),
@@ -239,7 +234,6 @@ class _LearnerHomeState extends State<LearnerHome> {
     );
   }
 
-  // ================= HOME SCREEN =================
   Widget homeScreen() {
     return SafeArea(
       child: Column(
@@ -250,7 +244,7 @@ class _LearnerHomeState extends State<LearnerHome> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  "QuickHelp",
+                  "CampusMentor",
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 Stack(
@@ -302,7 +296,6 @@ class _LearnerHomeState extends State<LearnerHome> {
             ),
           ),
 
-          /// SEARCH
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Container(
@@ -332,7 +325,6 @@ class _LearnerHomeState extends State<LearnerHome> {
           ),
           const SizedBox(height: 12),
 
-          /// FILTER CHIPS
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -347,14 +339,13 @@ class _LearnerHomeState extends State<LearnerHome> {
 
           const SizedBox(height: 20),
 
-          /// TOP HELPERS TITLE
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  "Top Helpers",
+                  "Mentors",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 GestureDetector(
@@ -377,7 +368,6 @@ class _LearnerHomeState extends State<LearnerHome> {
 
           const SizedBox(height: 12),
 
-          /// HORIZONTAL HELPERS
           SizedBox(
             height: 290,
             child: helpers.isEmpty
@@ -399,7 +389,6 @@ class _LearnerHomeState extends State<LearnerHome> {
     );
   }
 
-  // ================= COMPONENTS =================
   Widget filterChip(String text) {
     final bool active = selectedFilter == text;
 
@@ -473,7 +462,7 @@ class _LearnerHomeState extends State<LearnerHome> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "${h['department']} · Year $batch",
+                    "${h['department']} · Batch $batch",
                     style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   const SizedBox(height: 8),

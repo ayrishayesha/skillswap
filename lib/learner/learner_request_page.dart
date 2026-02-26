@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/helper/helper_details_screen.dart';
-import 'package:my_app/request_details.dart';
+import 'package:my_app/request/request_accepted_page.dart';
+
+import 'package:my_app/request/request_details.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LearnerRequestsPage extends StatefulWidget {
@@ -23,7 +24,7 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
     super.initState();
 
     fetchRequests();
-    listenForUpdates(); // 🔔 realtime
+    listenForUpdates();
   }
 
   @override
@@ -32,7 +33,6 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
     super.dispose();
   }
 
-  // ================= FETCH =================
   Future<void> fetchRequests() async {
     final user = supabase.auth.currentUser;
 
@@ -66,7 +66,6 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
     });
   }
 
-  // ================= REALTIME =================
   void listenForUpdates() {
     final user = supabase.auth.currentUser;
 
@@ -81,7 +80,6 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
           callback: (payload) {
             final newRecord = payload.newRecord;
 
-            // Check if this update is for current learner
             if (newRecord['learner_id'] == user.id) {
               final status = newRecord['status'];
 
@@ -95,7 +93,6 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
         .subscribe();
   }
 
-  // ================= POPUP =================
   void showNotification(String status) {
     if (!mounted) return;
 
@@ -106,12 +103,11 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: status == 'accepted' ? Colors.green : Colors.red,
+        backgroundColor: status == 'accepted' ? Colors.blue : Colors.red,
       ),
     );
   }
 
-  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -144,17 +140,13 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
     );
   }
 
-  // ================= CARD =================
   Widget requestCard(Map r, Map helper) {
     return GestureDetector(
-      // ✅ ADDED: Clickable
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => RequestDetailsPage(
-              requestId: r['id'], // ✅ শুধু id পাঠাতে হবে
-            ),
+            builder: (_) => RequestDetailsPage(requestId: r['id']),
           ),
         );
       },
@@ -167,6 +159,7 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
           boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 6)],
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
               radius: 26,
@@ -193,16 +186,12 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
                       fontSize: 15,
                     ),
                   ),
-
                   const SizedBox(height: 4),
-
                   Text(
                     "${helper['department']} • Batch ${helper['batch']}",
                     style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
-
                   const SizedBox(height: 6),
-
                   if (r['subject'] != null)
                     Text(
                       "Need help for ${r['subject']}",
@@ -211,9 +200,7 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-
                   const SizedBox(height: 6),
-
                   Row(
                     children: [
                       const Text("Status: "),
@@ -230,16 +217,53 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
               ),
             ),
 
-            Text(
-              _formatDateTime(r['created_at']),
-              style: const TextStyle(fontSize: 11),
+            const SizedBox(width: 8),
+
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (r['status'] == 'accepted')
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              RequestAcceptedPage(requestId: r['id']),
+                        ),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text(
+                      "View",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+
+                const SizedBox(height: 40),
+
+                Text(
+                  _formatDateTime(r['created_at']),
+                  style: const TextStyle(fontSize: 11),
+                  textAlign: TextAlign.right,
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
   }
-  // ================= HELPERS =================
 
   Color _getStatusColor(String status) {
     switch (status) {
@@ -252,7 +276,6 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
     }
   }
 
-  // ✅ UPDATED: Date + Time (AM/PM format)
   String _formatDateTime(String date) {
     final dt = DateTime.parse(date).toLocal();
 
@@ -264,10 +287,9 @@ class _LearnerRequestsPageState extends State<LearnerRequestsPage> {
     String period = hour >= 12 ? "PM" : "AM";
 
     hour = hour % 12;
-    if (hour == 0) hour = 12; // 0 হলে 12 show করবে
-
+    if (hour == 0) hour = 12;
     final time = "$hour:$minute $period";
 
-    return "$day\n$time"; // Date এর নিচে AM/PM time দেখাবে
+    return "$day\n$time";
   }
 }

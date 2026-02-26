@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:my_app/request/request_service.dart';
@@ -23,7 +22,6 @@ class _CreateRequestPageState extends State<CreateRequestPage> {
   List<String> skills = [];
   PlatformFile? selectedFile;
 
-  /// ================= FETCH SKILLS =================
   Future<void> fetchSkills() async {
     final response = await supabase.from('skills').select('name');
 
@@ -38,7 +36,6 @@ class _CreateRequestPageState extends State<CreateRequestPage> {
     fetchSkills();
   }
 
-  /// ================= PICK FILE =================
   Future<void> pickFile() async {
     final result = await FilePicker.platform.pickFiles(
       withData: true,
@@ -53,7 +50,6 @@ class _CreateRequestPageState extends State<CreateRequestPage> {
     }
   }
 
-  /// ================= FILE PREVIEW =================
   Widget filePreview() {
     if (selectedFile == null) return const SizedBox();
 
@@ -134,7 +130,6 @@ class _CreateRequestPageState extends State<CreateRequestPage> {
     );
   }
 
-  /// ================= BUILD =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -152,14 +147,12 @@ class _CreateRequestPageState extends State<CreateRequestPage> {
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
-            /// ================= SELECT SKILL =================
             const Text(
               "Select Skill",
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
 
-            /// 🔥 Autocomplete Search Field (Main field e search)
             Autocomplete<String>(
               optionsBuilder: (TextEditingValue value) {
                 if (value.text.isEmpty) {
@@ -192,7 +185,6 @@ class _CreateRequestPageState extends State<CreateRequestPage> {
 
             const SizedBox(height: 20),
 
-            /// ================= TITLE =================
             const Text(
               "Request Title",
               style: TextStyle(fontWeight: FontWeight.bold),
@@ -211,7 +203,6 @@ class _CreateRequestPageState extends State<CreateRequestPage> {
             ),
             const SizedBox(height: 20),
 
-            /// ================= DESCRIPTION =================
             const Text(
               "Problem Description",
               style: TextStyle(fontWeight: FontWeight.bold),
@@ -231,7 +222,6 @@ class _CreateRequestPageState extends State<CreateRequestPage> {
             ),
             const SizedBox(height: 20),
 
-            /// ================= ATTACHMENT =================
             const Text(
               "Attachment",
               style: TextStyle(fontWeight: FontWeight.bold),
@@ -262,7 +252,6 @@ class _CreateRequestPageState extends State<CreateRequestPage> {
             ),
             const SizedBox(height: 30),
 
-            /// ================= POST BUTTON =================
             SizedBox(
               height: 55,
               child: ElevatedButton(

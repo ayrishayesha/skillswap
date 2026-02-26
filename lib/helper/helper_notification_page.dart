@@ -1,5 +1,3 @@
-// helper_notification_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -21,10 +19,9 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
   void initState() {
     super.initState();
     fetchRequests();
-    listenRealtimeNotification(); // ✅ new realtime listener
+    listenRealtimeNotification();
   }
 
-  // ================= FETCH =================
   Future<void> fetchRequests() async {
     final user = supabase.auth.currentUser;
 
@@ -59,7 +56,6 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
     }
   }
 
-  // ================= UPDATE =================
   Future<void> updateStatus(String requestId, String status) async {
     try {
       await supabase
@@ -72,7 +68,7 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Request $status"),
-          backgroundColor: status == "accepted" ? Colors.green : Colors.red,
+          backgroundColor: status == "accepted" ? Colors.blue : Colors.red,
         ),
       );
     } catch (e) {
@@ -80,7 +76,6 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
     }
   }
 
-  // ================= REALTIME =================
   void listenRealtimeNotification() {
     final user = supabase.auth.currentUser;
     if (user == null) return;
@@ -94,11 +89,9 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
           callback: (payload) {
             final newData = payload.newRecord;
 
-            // Only show if this helper is the recipient
             if (newData['helper_id'] == user.id) {
               fetchRequests();
 
-              // ✅ Snackbar at top
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   behavior: SnackBarBehavior.floating,
@@ -122,12 +115,11 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
     super.dispose();
   }
 
-  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Helper Notification"),
+        title: const Text("Mentor Notification"),
         centerTitle: true,
       ),
       backgroundColor: const Color(0xffF6F7FB),
@@ -153,7 +145,6 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
     );
   }
 
-  // ================= CARD =================
   Widget requestCard(Map r, Map learner) {
     final status = r['status'];
 
@@ -264,7 +255,6 @@ class _HelperNotificationPageState extends State<HelperNotificationPage> {
     );
   }
 
-  // ================= HELPERS =================
   Color getStatusColor(String status) {
     switch (status) {
       case "accepted":

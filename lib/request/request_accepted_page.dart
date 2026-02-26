@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/request_details.dart';
+import 'package:my_app/request/request_details.dart';
+
 import 'package:my_app/screen/chats_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -207,6 +208,7 @@ class _RequestAcceptedPageState extends State<RequestAcceptedPage> {
           currentUserId: requestData!['learner_id'],
           otherUserId: requestData!['helper_id'],
           otherUserName: helperData!['full_name'],
+          role: 'learner',
         ),
       ),
     );

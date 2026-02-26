@@ -30,8 +30,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     }
   }
 
-  // ================= RESET PASSWORD FUNCTION =================
-  // ================= RESET PASSWORD FUNCTION (OTP) =================
   Future<void> _resetPassword() async {
     if (!formKey.currentState!.validate()) return;
 
@@ -42,18 +40,16 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       final otp = resettokenC.text.trim();
       final newPassword = passwordC.text.trim();
 
-      /// 1️⃣ Verify OTP
       final res = await supabase.auth.verifyOTP(
         email: email,
         token: otp,
-        type: OtpType.recovery, // VERY IMPORTANT
+        type: OtpType.recovery,
       );
 
       if (res.session == null) {
         throw "Invalid or expired OTP";
       }
 
-      /// 2️⃣ Update password
       await supabase.auth.updateUser(UserAttributes(password: newPassword));
 
       if (!mounted) return;
@@ -62,7 +58,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         const SnackBar(content: Text("Password reset successful")),
       );
 
-      /// 3️⃣ Logout (optional but recommended)
       await supabase.auth.signOut();
 
       Navigator.pushAndRemoveUntil(
@@ -80,8 +75,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       }
     }
   }
-
-  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -116,7 +109,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
                 const SizedBox(height: 32),
 
-                // Reset Token
                 TextFormField(
                   controller: resettokenC,
                   decoration: InputDecoration(
@@ -143,7 +135,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
                 const SizedBox(height: 20),
 
-                // Email
                 TextFormField(
                   controller: emailC,
                   decoration: InputDecoration(
@@ -162,7 +153,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
                 const SizedBox(height: 20),
 
-                // Password
                 TextFormField(
                   controller: passwordC,
                   obscureText: true,
@@ -179,7 +169,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
                 const SizedBox(height: 20),
 
-                // Confirm Password
                 TextFormField(
                   controller: confirmPasswordC,
                   obscureText: true,
@@ -200,7 +189,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
                 const SizedBox(height: 32),
 
-                // ================= BUTTON =================
                 SizedBox(
                   width: double.infinity,
                   height: 52,

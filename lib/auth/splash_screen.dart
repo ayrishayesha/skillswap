@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/auth/login_screen.dart';
 import 'package:my_app/screen/home_screen.dart';
-import 'package:my_app/screen/basic_info_screen.dart'; // 👈 Add import for BasicInfoScreen
+import 'package:my_app/profile/basic_info_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -25,7 +25,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
     final session = supabase.auth.currentSession;
 
-    // ❌ Not logged in → LoginScreen
     if (session == null) {
       if (!mounted) return;
       Navigator.pushReplacement(
@@ -46,7 +45,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
       if (!mounted) return;
 
-      // ✅ NEW USER → profile null → go to BasicInfoScreen
       if (profile == null) {
         Navigator.pushReplacement(
           context,
@@ -57,26 +55,24 @@ class _SplashScreenState extends State<SplashScreen> {
 
       final role = profile['role'];
 
-      // ✅ HELPER
       if (role == "helper") {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const LearnerHome()),
+          MaterialPageRoute(builder: (_) => const Homepage()),
         );
       }
-      // ✅ LEARNER
+      //  LEARNER
       else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const LearnerHome()),
+          MaterialPageRoute(builder: (_) => const Homepage()),
         );
       }
     } catch (e) {
-      // ❌ If any error → fallback LearnerHome
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const LearnerHome()),
+        MaterialPageRoute(builder: (_) => const Homepage()),
       );
     }
   }
@@ -99,7 +95,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 25),
             const Text(
-              "LU QuickHelp",
+              "CampusMentor",
               style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 30),

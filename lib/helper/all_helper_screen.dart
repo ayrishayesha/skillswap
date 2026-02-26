@@ -12,7 +12,6 @@ class AllHelpersPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
 
-      /// ---------- APPBAR ----------
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -21,11 +20,9 @@ class AllHelpersPage extends StatelessWidget {
         iconTheme: const IconThemeData(color: Colors.black),
       ),
 
-      /// ---------- BODY ----------
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          /// Total Helpers
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
             child: Text(
@@ -34,7 +31,6 @@ class AllHelpersPage extends StatelessWidget {
             ),
           ),
 
-          /// List
           Expanded(
             child: helpers.isEmpty
                 ? const Center(child: Text("No helpers found"))
@@ -53,8 +49,6 @@ class AllHelpersPage extends StatelessWidget {
     );
   }
 }
-
-/// ================= HELPER CARD =================
 
 class HelperCard extends StatelessWidget {
   final Map helper;
@@ -85,15 +79,12 @@ class HelperCard extends StatelessWidget {
         ],
       ),
 
-      /// -------- MAIN COLUMN --------
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          /// ========== TOP ROW ==========
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              /// Avatar
               CircleAvatar(
                 radius: 28,
                 backgroundColor: Colors.grey.shade200,
@@ -107,7 +98,6 @@ class HelperCard extends StatelessWidget {
 
               const SizedBox(width: 12),
 
-              /// Name + Dept
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,10 +149,8 @@ class HelperCard extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          /// ========== BUTTONS ==========
           Row(
             children: [
-              /// View Profile
               Expanded(
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
@@ -185,7 +173,6 @@ class HelperCard extends StatelessWidget {
 
               const SizedBox(width: 12),
 
-              /// Request Help
               Expanded(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(

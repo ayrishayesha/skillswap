@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/auth/reset_password_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-// import 'package:get/get.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -130,7 +129,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  // Send Reset Token
   Future<void> _requestResetToken() async {
     if (!formKey.currentState!.validate()) return;
 

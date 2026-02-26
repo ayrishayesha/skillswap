@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/screen/home_screen.dart';
-import 'package:my_app/screen/splash_screen.dart';
+import 'package:my_app/auth/splash_screen.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// Supabase client
 final supabase = Supabase.instance.client;
 
 class ShowcaseSkillsPage extends StatefulWidget {
@@ -28,7 +27,6 @@ class _ShowcaseSkillsPageState extends State<ShowcaseSkillsPage> {
 
   final List<String> selectedSkills = [];
 
-  // switch: true => helper, false => learner
   bool helpOthers = true;
 
   final TextEditingController searchCtrl = TextEditingController();
@@ -111,7 +109,6 @@ class _ShowcaseSkillsPageState extends State<ShowcaseSkillsPage> {
     try {
       final role = helpOthers ? "helper" : "learner";
 
-      // ✅ UPDATE PROFILE + SAVE SKILLS TEXT ARRAY
       await supabase.from('profiles').upsert({
         'id': user.id,
         'role': role,
@@ -122,7 +119,6 @@ class _ShowcaseSkillsPageState extends State<ShowcaseSkillsPage> {
 
       List<int> skillIds = [];
 
-      // Existing logic (UNCHANGED)
       for (String skill in selectedSkills) {
         final existing = await supabase
             .from('skills')
@@ -160,17 +156,16 @@ class _ShowcaseSkillsPageState extends State<ShowcaseSkillsPage> {
       if (role == "learner") {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const LearnerHome()),
+          MaterialPageRoute(builder: (_) => const Homepage()),
         );
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const LearnerHome()),
+          MaterialPageRoute(builder: (_) => const Homepage()),
         );
       }
       if (!mounted) return;
 
-      // ✅ DIRECT SPLASH PAGE (NO CONDITION)
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const SplashScreen()),

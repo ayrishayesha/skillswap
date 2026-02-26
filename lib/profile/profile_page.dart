@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/screen/edit_profile.dart';
+import 'package:my_app/profile/edit_profile.dart';
 
-import 'package:my_app/screen/edit_skill.dart';
+import 'package:my_app/profile/edit_skill.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:my_app/screen/home_screen.dart';
@@ -36,7 +36,6 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
     loadProfile();
   }
 
-  // ---------------- LOAD DATA ----------------
   Future<void> loadProfile() async {
     try {
       final user = supabase.auth.currentUser;
@@ -64,7 +63,6 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
     setState(() => loading = false);
   }
 
-  // ---------------- UPDATE ROLE ----------------
   Future<void> updateRole(bool value) async {
     final user = supabase.auth.currentUser;
 
@@ -80,7 +78,6 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
     setState(() => helper = value);
   }
 
-  // ---------------- LOGOUT ----------------
   Future<void> logout() async {
     await supabase.auth.signOut();
 
@@ -93,19 +90,11 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
     );
   }
 
-  // ---------------- BACK NAVIGATION ----------------
   void goBack() {
-    if (helper) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LearnerHome()),
-      );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LearnerHome()),
-      );
-    }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const Homepage()),
+    );
   }
 
   @override
@@ -133,7 +122,6 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
                   children: [
                     const SizedBox(height: 5),
 
-                    // ---------------- AVATAR ----------------
                     CircleAvatar(
                       radius: 55,
                       backgroundImage: avatar.isNotEmpty
@@ -184,53 +172,8 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
                       ),
                     ),
 
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 50),
 
-                    // ---------------- RATING ----------------
-                    Row(
-                      children: [
-                        Expanded(
-                          child: buildBox(
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  rating.toString(),
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                const Icon(
-                                  Icons.star,
-                                  color: Colors.amber,
-                                  size: 18,
-                                ),
-                              ],
-                            ),
-                            "RATING",
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: buildBox(
-                            Text(
-                              sessions.toString(),
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            "SESSIONS",
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // ---------------- SKILLS ----------------
                     const Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
@@ -242,7 +185,7 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
                       ),
                     ),
 
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 10),
 
                     Wrap(
                       spacing: 10,
@@ -252,9 +195,8 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
                       }).toList(),
                     ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 40),
 
-                    // ---------------- BUTTONS ----------------
                     Row(
                       children: [
                         Expanded(
@@ -283,9 +225,8 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
 
                     const SizedBox(height: 25),
 
-                    // ---------------- SWITCH ----------------
                     Container(
-                      padding: const EdgeInsets.all(15),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey.shade300),
                         borderRadius: BorderRadius.circular(15),
@@ -300,7 +241,7 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
                           ),
                           Switch(
                             value: helper,
-                            activeColor: Colors.deepPurple,
+                            activeColor: Colors.blue,
                             onChanged: (v) => updateRole(v),
                           ),
                         ],
@@ -309,7 +250,6 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
 
                     const SizedBox(height: 25),
 
-                    // ---------------- LOGOUT ----------------
                     SizedBox(
                       width: double.infinity,
                       height: 55,
@@ -339,7 +279,6 @@ class _Learner_Profile_PageState extends State<Learner_Profile_Page> {
     );
   }
 
-  // ---------------- WIDGETS ----------------
   Widget buildBox(Widget valueWidget, String title) {
     return Expanded(
       child: Container(

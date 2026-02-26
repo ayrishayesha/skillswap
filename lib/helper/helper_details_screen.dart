@@ -29,7 +29,6 @@ class _HelperDetailsPageState extends State<HelperDetailsPage> {
     loadHelperData();
   }
 
-  /// -------- LOAD DATA FROM DATABASE ----------
   Future<void> loadHelperData() async {
     try {
       final data = await supabase
@@ -58,7 +57,6 @@ class _HelperDetailsPageState extends State<HelperDetailsPage> {
     }
   }
 
-  /// ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,7 +81,6 @@ class _HelperDetailsPageState extends State<HelperDetailsPage> {
 
                   const SizedBox(height: 20),
 
-                  /// Name
                   Text(
                     name,
                     style: const TextStyle(
@@ -94,7 +91,6 @@ class _HelperDetailsPageState extends State<HelperDetailsPage> {
 
                   const SizedBox(height: 6),
 
-                  /// Dept + Batch
                   Text(
                     "$dept, $batch batch",
                     style: const TextStyle(color: Colors.grey, fontSize: 15),
@@ -102,7 +98,6 @@ class _HelperDetailsPageState extends State<HelperDetailsPage> {
 
                   const SizedBox(height: 15),
 
-                  /// University (Static for now)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
@@ -127,7 +122,6 @@ class _HelperDetailsPageState extends State<HelperDetailsPage> {
 
                   const SizedBox(height: 25),
 
-                  /// Expertise
                   const Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -154,12 +148,10 @@ class _HelperDetailsPageState extends State<HelperDetailsPage> {
 
                   const SizedBox(height: 30),
 
-                  /// Session Info
                   sessionBox(),
 
                   const SizedBox(height: 25),
 
-                  /// About
                   const Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
@@ -171,7 +163,6 @@ class _HelperDetailsPageState extends State<HelperDetailsPage> {
                     ),
                   ),
 
-                  // const SizedBox(height: 5),
                   Text(
                     bio.isNotEmpty ? bio : "No bio added yet.",
                     style: const TextStyle(
@@ -180,7 +171,6 @@ class _HelperDetailsPageState extends State<HelperDetailsPage> {
                   ),
                   const SizedBox(height: 30),
 
-                  /// Button
                   SizedBox(
                     width: double.infinity,
                     height: 55,
@@ -209,8 +199,6 @@ class _HelperDetailsPageState extends State<HelperDetailsPage> {
             ),
     );
   }
-
-  /// ---------- Widgets ----------
 
   Widget statBox(String value, String title, IconData icon, Color color) {
     return Container(

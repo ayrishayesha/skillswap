@@ -3,7 +3,6 @@ import 'package:my_app/auth/email_verification_screen.dart';
 import 'package:my_app/auth/login_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// ---------- STRONG PASSWORD CHECK ----------
 bool isStrongPassword(String password) {
   final regex = RegExp(
     r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$',
@@ -11,7 +10,6 @@ bool isStrongPassword(String password) {
   return regex.hasMatch(password);
 }
 
-// ---------- UNIVERSITY EMAIL CHECK ----------
 bool isUniversityEmail(String email) {
   return email.endsWith("@lus.ac.bd");
 }
@@ -48,7 +46,6 @@ class _SignupscreenState extends State<SignupScreen> {
 
       if (!mounted) return;
 
-      // ✅ Go to verification screen (we will save full_name AFTER verification)
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(

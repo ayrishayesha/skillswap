@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/request_details.dart';
+import 'package:my_app/request/request_details.dart';
 import 'package:my_app/screen/chats_screen.dart';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HelperRequestsPage extends StatefulWidget {
@@ -25,9 +26,9 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
   void initState() {
     super.initState();
     fetchRequests();
+    startRealtime();
   }
 
-  // ================= FETCH REQUEST =================
   Future<void> fetchRequests() async {
     final user = supabase.auth.currentUser;
 
@@ -69,7 +70,27 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
     }
   }
 
-  // ================= SHOW CONFIRM POPUP =================
+  void startRealtime() {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    supabase
+        .channel('helper-requests-${user.id}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'request',
+          callback: (payload) {
+            final newData = payload.newRecord;
+
+            if (newData['helper_id'] == user.id) {
+              fetchRequests();
+            }
+          },
+        )
+        .subscribe();
+  }
+
   Future<void> showConfirmDialog(dynamic r) async {
     final learner = r['learner'];
 
@@ -84,7 +105,6 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
           child: Padding(
             padding: const EdgeInsets.all(20),
 
-            // ================= POPUP UI =================
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -100,7 +120,6 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
 
                 const SizedBox(height: 20),
 
-                // ================= LEARNER INFO =================
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -124,12 +143,10 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
 
                       const SizedBox(width: 12),
 
-                      // Info
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Name
                             Text(
                               learner?['full_name'] ?? "Learner",
                               style: const TextStyle(
@@ -140,7 +157,6 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
 
                             const SizedBox(height: 4),
 
-                            // Subject
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
@@ -161,7 +177,6 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
 
                             const SizedBox(height: 5),
 
-                            // Title
                             Text(
                               r['title'] ?? '',
                               maxLines: 1,
@@ -177,12 +192,11 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
 
                 const SizedBox(height: 25),
 
-                // ================= BUTTONS =================
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pop(context, true); // Confirm
+                      Navigator.pop(context, true);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
@@ -213,13 +227,11 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
       },
     );
 
-    // ================= IF CONFIRMED =================
     if (result == true) {
       updateStatus(r['id'], 'accepted', r['learner_id']);
     }
   }
 
-  // ================= UPDATE STATUS =================
   Future<void> updateStatus(String id, String status, String learnerId) async {
     try {
       await supabase.from('request').update({'status': status}).eq('id', id);
@@ -233,7 +245,6 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
         ),
       );
 
-      // ================= NAVIGATE TO CHAT =================
       if (status == 'accepted') {
         Navigator.push(
           context,
@@ -242,7 +253,12 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
               requestId: id,
               currentUserId: supabase.auth.currentUser!.id,
               otherUserId: learnerId,
-              otherUserName: 'Learner',
+              role: 'helper',
+              otherUserName:
+                  requests.firstWhere(
+                    (r) => r['id'] == id,
+                  )['learner']?['full_name'] ??
+                  'Learner',
             ),
           ),
         );
@@ -252,7 +268,6 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
     }
   }
 
-  // ================= FILTER =================
   List get filteredRequests {
     return requests.where((r) {
       final subject = r['subject'] ?? '';
@@ -269,7 +284,6 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
     }).toList();
   }
 
-  // ================= TIME FORMAT =================
   String formatTime(String date) {
     final utcTime = DateTime.parse(date).toUtc();
     final localTime = utcTime.toLocal();
@@ -284,7 +298,6 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
     return "${diff.inDays}d ago";
   }
 
-  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -293,7 +306,10 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        title: const Text("Requests", style: TextStyle(color: Colors.black)),
+        title: const Text(
+          "Mentor Requests",
+          style: TextStyle(color: Colors.black),
+        ),
       ),
 
       body: loading
@@ -309,7 +325,6 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
     );
   }
 
-  // ================= CARD =================
   Widget _buildCard(dynamic r) {
     final learner = r['learner'];
 
@@ -341,7 +356,6 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ================= SUBJECT + TIME =================
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -356,7 +370,6 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
 
             const SizedBox(height: 12),
 
-            // ================= PROFILE =================
             Row(
               children: [
                 CircleAvatar(
@@ -397,7 +410,6 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
 
             const SizedBox(height: 12),
 
-            // ================= TITLE =================
             Text(
               r['title'] ?? '',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -405,7 +417,6 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
 
             const SizedBox(height: 6),
 
-            // ================= DESC =================
             Text(
               r['description'] ?? '',
               maxLines: 2,
@@ -415,7 +426,6 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
 
             const SizedBox(height: 12),
 
-            // ================= BUTTON =================
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -468,7 +478,6 @@ class _HelperRequestsPageState extends State<HelperRequestsPage> {
     );
   }
 
-  // ================= SUBJECT BADGE =================
   Widget _subjectBadge(String? subject) {
     Color color = Colors.blue;
 

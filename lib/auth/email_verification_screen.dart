@@ -28,7 +28,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // Run once when page opens
     _checkVerificationSilently();
   }
 
@@ -38,7 +37,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
     super.dispose();
   }
 
-  // This triggers when user returns to the app after verifying via email link
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
@@ -58,7 +56,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
       if (user != null && user.emailConfirmedAt != null) {
         verified = true;
 
-        // ✅ Save full_name into profiles table
         await supabase.from('profiles').upsert({
           'id': user.id,
           'full_name': widget.fullName.trim(),
@@ -67,14 +64,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
 
         if (!mounted) return;
 
-        // ✅ After verification, send user back to login
-        // If your login is a specific page, replace this with:
-        // Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginPage()), (r) => false);
         Navigator.pop(context);
       }
     } catch (_) {
-      // Don’t show errors here (silent check),
-      // because user is just waiting / might not be verified yet.
     } finally {
       if (mounted) setState(() => checking = false);
     }

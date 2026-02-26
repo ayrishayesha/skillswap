@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/screen/home_screen.dart';
-import 'package:my_app/screen/profile_page.dart';
+import 'package:my_app/profile/profile_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final supabase = Supabase.instance.client;
@@ -22,7 +22,7 @@ class _EditSkillpageState extends State<EditSkillpage> {
     "OS",
     "OOP",
     "Algorithms",
-    // "Web Development",
+
     "Machine Learning",
   ];
 
@@ -48,7 +48,6 @@ class _EditSkillpageState extends State<EditSkillpage> {
     super.dispose();
   }
 
-  /// ---------------- SEARCH SKILLS ----------------
   Future<void> _onSearchChanged() async {
     final q = searchCtrl.text.trim();
     if (q.isEmpty) {
@@ -87,7 +86,6 @@ class _EditSkillpageState extends State<EditSkillpage> {
     });
   }
 
-  /// ---------------- SAVE SKILLS ----------------
   Future<void> _finish() async {
     if (selectedSkills.isEmpty) {
       ScaffoldMessenger.of(
@@ -166,7 +164,7 @@ class _EditSkillpageState extends State<EditSkillpage> {
       if (role == "learner") {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const LearnerHome()),
+          MaterialPageRoute(builder: (_) => const Homepage()),
         );
       } else {
         Navigator.pushReplacement(
@@ -202,7 +200,6 @@ class _EditSkillpageState extends State<EditSkillpage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// ---------------- SEARCH FIELD ----------------
             TextField(
               controller: searchCtrl,
               decoration: InputDecoration(
@@ -219,7 +216,6 @@ class _EditSkillpageState extends State<EditSkillpage> {
 
             const SizedBox(height: 20),
 
-            /// ---------------- SEARCH RESULTS ----------------
             if (searching)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 6),
@@ -251,7 +247,6 @@ class _EditSkillpageState extends State<EditSkillpage> {
 
             const SizedBox(height: 20),
 
-            /// ---------------- SELECTED SKILLS ----------------
             if (selectedSkills.isNotEmpty) ...[
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -288,7 +283,6 @@ class _EditSkillpageState extends State<EditSkillpage> {
               const SizedBox(height: 25),
             ],
 
-            /// ---------------- SUGGESTED SKILLS ----------------
             const Text(
               "SUGGESTED SKILLS",
               style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
@@ -321,7 +315,6 @@ class _EditSkillpageState extends State<EditSkillpage> {
 
             const SizedBox(height: 15),
 
-            /// ---------------- SAVE BUTTON ----------------
             SizedBox(
               width: double.infinity,
               height: 60,

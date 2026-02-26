@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/request/request_accepted_page.dart';
-import 'package:my_app/request_details.dart';
+import 'package:my_app/request/request_details.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LearnerNotificationPage extends StatefulWidget {
@@ -19,7 +19,6 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
 
   RealtimeChannel? channel;
 
-  // ================= INIT =================
   @override
   void initState() {
     super.initState();
@@ -28,9 +27,9 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
   }
 
   Future<void> initNotificationSystem() async {
-    await fetchRequests(); // First load
-    markAllSeen(); // Clear badge
-    startRealtime(); // Live listen
+    await fetchRequests();
+    markAllSeen();
+    startRealtime();
   }
 
   @override
@@ -39,7 +38,6 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
     super.dispose();
   }
 
-  // ================= FETCH =================
   Future<void> fetchRequests() async {
     final user = supabase.auth.currentUser;
     if (user == null) return;
@@ -78,7 +76,6 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
     }
   }
 
-  // ================= REALTIME =================
   void startRealtime() {
     final user = supabase.auth.currentUser;
     if (user == null) return;
@@ -86,7 +83,7 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
     channel = supabase
         .channel('learner-notification-global')
         .onPostgresChanges(
-          event: PostgresChangeEvent.all, // ✅ IMPORTANT
+          event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'request',
           callback: (payload) {
@@ -99,7 +96,6 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
 
               if (status == 'accepted' || status == 'rejected') {
                 markSingleUnseen(newData['id']);
-                showPopup(status);
               }
             }
           },
@@ -107,9 +103,6 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
         .subscribe();
   }
 
-  // ================= SEEN SYSTEM =================
-
-  // Mark all as seen when open page
   Future<void> markAllSeen() async {
     final user = supabase.auth.currentUser;
     if (user == null) return;
@@ -121,33 +114,10 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
         .or('status.eq.accepted,status.eq.rejected');
   }
 
-  // Mark single unseen for new notification
   Future<void> markSingleUnseen(String id) async {
     await supabase.from('request').update({'is_seen': false}).eq('id', id);
   }
 
-  // ================= POPUP =================
-  void showPopup(String status) {
-    if (!mounted) return;
-
-    String msg = "";
-
-    if (status == "accepted") {
-      msg = "🎉 Your request has been ACCEPTED!";
-    } else if (status == "rejected") {
-      msg = "❌ Your request has been REJECTED";
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: status == "accepted" ? Colors.blue : Colors.red,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
-
-  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -177,7 +147,6 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
     );
   }
 
-  // ================= CARD =================
   Widget notificationCard(Map r, Map helper) {
     return GestureDetector(
       onTap: () {
@@ -272,28 +241,33 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
 
                 const SizedBox(height: 6),
 
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => RequestAcceptedPage(requestId: r['id']),
+                if (r['status'] == 'accepted')
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              RequestAcceptedPage(requestId: r['id']),
+                        ),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
                       ),
-                    );
-                  },
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    child: const Text(
+                      "View",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                  child: const Text(
-                    "View",
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
-                ),
               ],
             ),
           ],
@@ -301,8 +275,6 @@ class _LearnerNotificationPageState extends State<LearnerNotificationPage> {
       ),
     );
   }
-
-  // ================= HELPERS =================
 
   String getMessage(String status) {
     if (status == "accepted") {

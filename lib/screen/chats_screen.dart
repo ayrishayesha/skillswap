@@ -1,4 +1,3 @@
-// ================= FULL FIXED CHATS SCREEN =================
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -14,6 +13,7 @@ class ChatsScreen extends StatefulWidget {
   final String currentUserId;
   final String otherUserId;
   final String otherUserName;
+  final String role;
 
   const ChatsScreen({
     super.key,
@@ -21,6 +21,7 @@ class ChatsScreen extends StatefulWidget {
     required this.currentUserId,
     required this.otherUserId,
     required this.otherUserName,
+    required this.role,
   });
 
   @override
@@ -31,6 +32,10 @@ class _ChatsScreenState extends State<ChatsScreen> {
   final supabase = Supabase.instance.client;
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  StreamSubscription? _extendSubscription;
+  String _appBarName = '';
+  String _appBarPhoto = '';
+  bool _loadingAppBar = true;
 
   List<Map<String, dynamic>> messages = [];
   RealtimeChannel? channel;
@@ -49,17 +54,18 @@ class _ChatsScreenState extends State<ChatsScreen> {
   Uint8List? _selectedImageBytes;
   PlatformFile? _selectedFile;
 
-  // ====== ADDITIONAL VARIABLES FOR TIMER LOGIC ======
   StreamSubscription? _statusSubscription;
-  bool _bothReady = false; // true only if both learner & helper ready
+  bool _bothReady = false;
 
   @override
   void initState() {
     super.initState();
+    _loadAppBarUser();
     _checkSessionState();
     _loadMessages();
     _subscribeToMessages();
     _markReadyAndListen();
+    _listenExtendRequest();
   }
 
   @override
@@ -69,13 +75,38 @@ class _ChatsScreenState extends State<ChatsScreen> {
     _controller.dispose();
     _scrollController.dispose();
     _statusSubscription?.cancel();
+    _extendSubscription?.cancel();
 
     _markNotReady();
-
     super.dispose();
   }
 
-  // =================== READY STATUS LOGIC ===================
+  Future<void> _loadAppBarUser() async {
+    try {
+      final data = await supabase
+          .from('profiles')
+          .select('full_name, avatar_url')
+          .eq('id', widget.otherUserId)
+          .single();
+
+      if (!mounted) return;
+
+      setState(() {
+        _appBarName = data['full_name'] ?? '';
+        _appBarPhoto = data['avatar_url'] ?? '';
+        _loadingAppBar = false;
+      });
+    } catch (e) {
+      debugPrint('AppBar load error: $e');
+
+      setState(() {
+        _appBarName = widget.otherUserName;
+        _appBarPhoto = '';
+        _loadingAppBar = false;
+      });
+    }
+  }
+
   Future<void> _markReadyAndListen() async {
     await supabase.from('chat_status').upsert({
       'request_id': widget.requestId,
@@ -108,6 +139,41 @@ class _ChatsScreenState extends State<ChatsScreen> {
         });
   }
 
+  void _listenExtendRequest() {
+    _extendSubscription = supabase
+        .from('chat_status')
+        .stream(primaryKey: ['request_id', 'user_id'])
+        .eq('request_id', widget.requestId)
+        .listen((data) {
+          if (_sessionFullyCompleted) return;
+
+          if (data.isEmpty) return;
+
+          final extendRow = data.firstWhere(
+            (e) => e['extend_request'] != null,
+            orElse: () => {},
+          );
+
+          if (extendRow.isEmpty) return;
+
+          final status = extendRow['extend_request'];
+          final requestedBy = extendRow['extend_requested_by'];
+
+          if (status == 'requested' && requestedBy != widget.currentUserId) {
+            _showExtendDecisionPopup();
+          }
+
+          if (status == 'accepted') {
+            Navigator.pop(context);
+            _increaseTime();
+          }
+
+          if (status == 'rejected') {
+            _goToSessionComplete();
+          }
+        });
+  }
+
   Future<void> _markNotReady() async {
     await supabase
         .from('chat_status')
@@ -116,7 +182,107 @@ class _ChatsScreenState extends State<ChatsScreen> {
         .eq('user_id', widget.currentUserId);
   }
 
-  // ================= LOAD MESSAGES =================
+  void _showExtendDecisionPopup() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 30,
+                backgroundColor: Colors.blue.shade100,
+                child: const Icon(
+                  Icons.access_time,
+                  color: Colors.blue,
+                  size: 30,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                "Learner requested extension.\nAccept?",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                "+15 minutes will be added to the current session.",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 25),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: _acceptExtend,
+                  child: const Text("Accept Extension"),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: _rejectExtend,
+                  child: const Text("Decline"),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _acceptExtend() async {
+    Navigator.pop(context);
+
+    await supabase
+        .from('chat_status')
+        .update({'extend_request': 'accepted'})
+        .eq('request_id', widget.requestId);
+
+    _increaseTime();
+  }
+
+  Future<void> _rejectExtend() async {
+    Navigator.pop(context);
+
+    await supabase
+        .from('chat_status')
+        .update({'extend_request': 'rejected'})
+        .eq('request_id', widget.requestId);
+
+    _goToSessionComplete();
+  }
+
+  void _increaseTime() {
+    setState(() {
+      _remainingSecondsNotifier.value = 900;
+      _alreadyExtended = true;
+    });
+
+    _startTimer();
+  }
+
   Future<void> _loadMessages() async {
     try {
       final data = await supabase
@@ -145,7 +311,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
     });
   }
 
-  // ================= REALTIME =================
   void _subscribeToMessages() {
     channel = supabase.channel('chat_${widget.requestId}');
 
@@ -188,7 +353,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
     channel!.subscribe();
   }
 
-  // ================= SEND MESSAGE =================
   Future<void> _sendMessage() async {
     if ((_controller.text.trim().isEmpty &&
             _selectedImage == null &&
@@ -198,7 +362,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
       return;
 
     try {
-      // ===== EDIT MODE =====
       if (_isEditing && _editingMessageId != null) {
         await supabase
             .from('messages')
@@ -228,7 +391,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
         return;
       }
 
-      // ===== NORMAL SEND =====
       String? uploadedUrl;
       String? fileName;
       String type = 'text';
@@ -272,12 +434,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
         'reply_to': _replyingTo?['id'],
         'created_at': DateTime.now().toIso8601String(),
       });
-      // .select()
-      // .single();
-
-      // if (inserted != null) {
-      //   setState(() => messages.add(Map<String, dynamic>.from(inserted)));
-      // }
 
       _controller.clear();
       setState(() {
@@ -292,7 +448,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
     }
   }
 
-  // ================= IMAGE PICKER =================
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final file = await picker.pickImage(source: ImageSource.gallery);
@@ -306,7 +461,6 @@ class _ChatsScreenState extends State<ChatsScreen> {
     Navigator.pop(context);
   }
 
-  // ================= FILE PICKER =================
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(withData: true);
     if (result == null || result.files.isEmpty) return;
@@ -318,13 +472,11 @@ class _ChatsScreenState extends State<ChatsScreen> {
     Navigator.pop(context);
   }
 
-  // ================= DELETE =================
   Future<void> _deleteMessage(dynamic id) async {
     await supabase.from('messages').delete().eq('id', id);
     setState(() => messages.removeWhere((msg) => msg['id'] == id));
   }
 
-  // ================= TIMER =================
   final ValueNotifier<int> _remainingSecondsNotifier = ValueNotifier(900);
 
   void _startTimer() {
@@ -336,36 +488,61 @@ class _ChatsScreenState extends State<ChatsScreen> {
         _remainingSecondsNotifier.value--;
       } else {
         timer.cancel();
-        if (!_alreadyExtended)
-          _showTimeUpPopup();
-        else
+        if (!_alreadyExtended) {
+          if (widget.role == 'learner') {
+            _showTimeUpPopup();
+          } else {
+            _showWaitingDialogRequest();
+          }
+        } else {
           _goToSessionComplete();
+        }
       }
     });
   }
 
-  void _extendSession() {
+  Future<void> _requestExtend() async {
     Navigator.pop(context);
 
-    setState(() {
-      _alreadyExtended = true;
-      _remainingSecondsNotifier.value = 900;
-    });
+    await supabase
+        .from('chat_status')
+        .update({
+          'extend_request': 'requested',
+          'extend_requested_by': widget.currentUserId,
+        })
+        .eq('request_id', widget.requestId)
+        .eq('user_id', widget.currentUserId);
 
-    _startTimer();
+    _showWaitingDialog();
   }
 
   void _goToSessionComplete() async {
     _timer?.cancel();
+
+    setState(() {
+      _sessionFullyCompleted = true;
+    });
+
+    await supabase
+        .from('chat_status')
+        .update({'extend_request': null, 'extend_requested_by': null})
+        .eq('request_id', widget.requestId);
+
+    _extendSubscription?.cancel();
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('session_${widget.requestId}_fully_completed', true);
+
     if (!mounted) return;
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (_) => SessionCompleteScreen(
           helperName: widget.otherUserName,
           totalMinutes: 30,
+          role: widget.role,
+          helperId: widget.otherUserId,
         ),
       ),
     );
@@ -381,18 +558,93 @@ class _ChatsScreenState extends State<ChatsScreen> {
   void _showTimeUpPopup() {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Time Up'),
-        content: const Text('Request another 15 minutes?'),
-        actions: [
-          TextButton(onPressed: _extendSession, child: const Text('Extend')),
-          TextButton(onPressed: _goToSessionComplete, child: const Text('End')),
-        ],
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 30,
+                backgroundColor: Colors.blue.shade100,
+                child: const Icon(
+                  Icons.hourglass_bottom,
+                  color: Colors.blue,
+                  size: 30,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                "Problem not solved.\nRequest another 15 minutes?",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 25),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: _requestExtend,
+                  child: const Text("Request Extension"),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: _goToSessionComplete,
+                  child: const Text("End Session"),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  // ================= UI =================
+  void _showWaitingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        title: Text("Waiting"),
+        content: Text("Waiting 10 second for Helper response."),
+      ),
+    );
+  }
+
+  void _showWaitingDialogRequest() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        title: Text("Waiting"),
+        content: Text(
+          "Waiting 10 second for learner response.If learner not resopnse than click on "
+          "mark as complete"
+          " to complete this session",
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -401,10 +653,22 @@ class _ChatsScreenState extends State<ChatsScreen> {
         elevation: 1,
         title: Row(
           children: [
-            const CircleAvatar(radius: 18),
+            _loadingAppBar
+                ? const CircleAvatar(radius: 18)
+                : CircleAvatar(
+                    radius: 18,
+                    backgroundImage: _appBarPhoto.isNotEmpty
+                        ? NetworkImage(_appBarPhoto)
+                        : null,
+                    child: _appBarPhoto.isEmpty
+                        ? const Icon(Icons.person, size: 18)
+                        : null,
+                  ),
+
             const SizedBox(width: 10),
+
             Text(
-              widget.otherUserName,
+              _appBarName.isNotEmpty ? _appBarName : widget.otherUserName,
               style: const TextStyle(color: Colors.black),
             ),
             const Spacer(),

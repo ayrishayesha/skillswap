@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/screen/splash_screen.dart';
+import 'package:my_app/auth/splash_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:my_app/auth/signup_screen.dart';
@@ -23,7 +23,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final supabase = Supabase.instance.client;
 
-  /// ---------- LOGIN FUNCTION ----------
   login() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -38,7 +37,6 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (result.user != null && result.session != null) {
-        // ✅ CHANGE: login success → go to SplashScreen
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const SplashScreen()),
@@ -71,7 +69,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   const SizedBox(height: 40),
 
-                  /// Logo & title
                   Center(
                     child: Column(
                       children: const [
@@ -86,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         SizedBox(height: 12),
                         Text(
-                          "QuickHelp",
+                          "CampusMentor",
                           style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.bold,
@@ -94,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         SizedBox(height: 6),
                         Text(
-                          "Log in to start swapping skills.",
+                          "Log in to start share skills.",
                           style: TextStyle(color: Colors.grey),
                         ),
                       ],
@@ -103,7 +100,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 40),
 
-                  /// Email
                   const Text(
                     "Email",
                     style: TextStyle(fontWeight: FontWeight.w600),
@@ -128,7 +124,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 20),
 
-                  /// Password
                   const Text(
                     "Password",
                     style: TextStyle(fontWeight: FontWeight.w600),
@@ -179,7 +174,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 25),
 
-                  /// Login button
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -205,7 +199,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 30),
 
-                  /// Sign up
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

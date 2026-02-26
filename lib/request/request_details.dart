@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/screen/chats_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -27,7 +28,6 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
     fetchRequestDetails();
   }
 
-  // ================= FETCH DATA =================
   Future<void> fetchRequestDetails() async {
     final user = supabase.auth.currentUser;
 
@@ -63,7 +63,6 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
         .eq('id', widget.requestId)
         .single();
 
-    // detect role
     if (user != null) {
       if (user.id == data['helper_id']) {
         isHelper = true;
@@ -78,7 +77,6 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
     });
   }
 
-  // ================= UPDATE STATUS =================
   Future<void> updateStatus(String newStatus) async {
     setState(() => updating = true);
 
@@ -99,7 +97,136 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
     );
   }
 
-  // ================= DOWNLOAD FILE =================
+  Future<void> showConfirmDialog(String action) async {
+    final user = supabase.auth.currentUser;
+    final profile = (user != null && user.id == request!['helper_id'])
+        ? request!['learner']
+        : request!['helper'];
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.timer,
+                  size: 40,
+                  color: action == "accepted" ? Colors.blue : Colors.red,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  action == "accepted"
+                      ? "You will start a 15-minute help session"
+                      : "Are you sure you want to reject this request?",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 25,
+                        backgroundImage:
+                            profile['avatar_url'] != null &&
+                                profile['avatar_url'].toString().isNotEmpty
+                            ? NetworkImage(profile['avatar_url'])
+                            : null,
+                        child: profile['avatar_url'] == null
+                            ? const Icon(Icons.person)
+                            : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          profile['full_name'] ?? '',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 25),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context, true);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: action == "accepted"
+                          ? Colors.blue
+                          : Colors.red,
+                    ),
+                    child: Text(
+                      action == "accepted" ? "Confirm" : "Reject",
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.pop(context, false);
+                    },
+                    child: const Text("Cancel"),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (result == true) {
+      await updateStatus(action);
+
+      if (action == "accepted") {
+        final otherUserId = (user != null && user.id == request!['helper_id'])
+            ? request!['learner_id']
+            : request!['helper_id'];
+        final otherUserName = profile['full_name'] ?? 'User';
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChatsScreen(
+              requestId: request!['id'],
+              currentUserId: supabase.auth.currentUser!.id,
+              otherUserId: otherUserId,
+              otherUserName: otherUserName,
+              role: isHelper ? 'helper' : 'learner',
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> downloadFile(String url) async {
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
@@ -107,7 +234,6 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
     }
   }
 
-  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -133,7 +259,6 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // ================= PROFILE CARD =================
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -183,7 +308,6 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
 
           const SizedBox(height: 20),
 
-          // ================= DETAILS =================
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -213,9 +337,7 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
                   style: const TextStyle(color: Colors.grey),
                 ),
                 const SizedBox(height: 20),
-                // ================= ATTACHMENT =================
-                // ================= ATTACHMENT =================
-                // ================= ATTACHMENT =================
+
                 if (request!['attachment_url'] != null &&
                     request!['attachment_url'].toString().isNotEmpty)
                   Container(
@@ -234,7 +356,7 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.download, color: Colors.green),
+                          icon: const Icon(Icons.download, color: Colors.blue),
                           onPressed: () =>
                               downloadFile(request!['attachment_url']),
                           tooltip: "Download",
@@ -248,7 +370,6 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
 
           const SizedBox(height: 30),
 
-          // ================= BUTTONS (ONLY HELPER CAN SEE) =================
           if (isHelper && request!['status'] == "pending")
             Column(
               children: [
@@ -256,7 +377,9 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
                   width: double.infinity,
                   height: 55,
                   child: ElevatedButton(
-                    onPressed: updating ? null : () => updateStatus("accepted"),
+                    onPressed: updating
+                        ? null
+                        : () => showConfirmDialog("accepted"),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       shape: RoundedRectangleBorder(
@@ -278,7 +401,9 @@ class _RequestDetailsPageState extends State<RequestDetailsPage> {
                   width: double.infinity,
                   height: 55,
                   child: OutlinedButton(
-                    onPressed: updating ? null : () => updateStatus("rejected"),
+                    onPressed: updating
+                        ? null
+                        : () => showConfirmDialog("rejected"),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.red),
                       shape: RoundedRectangleBorder(

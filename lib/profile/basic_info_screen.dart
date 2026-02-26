@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:my_app/screen/showcase_skills.dart';
+import 'package:my_app/profile/showcase_skills.dart';
 
 class BasicInfo extends StatefulWidget {
   const BasicInfo({super.key});
@@ -17,7 +17,7 @@ class _BasicInfoState extends State<BasicInfo> {
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final deptController = TextEditingController();
-  final batchController = TextEditingController(); // ✅ added
+  final batchController = TextEditingController();
 
   Uint8List? imageBytes;
   XFile? pickedFile;
@@ -31,25 +31,23 @@ class _BasicInfoState extends State<BasicInfo> {
     loadProfile();
   }
 
-  /// ---------------- LOAD PROFILE ----------------
   Future<void> loadProfile() async {
     try {
       final user = supabase.auth.currentUser;
       if (user == null) return;
 
-      // email from auth
       emailController.text = user.email ?? '';
 
       final res = await supabase
           .from('profiles')
-          .select('full_name, department, avatar_url, batch') // ✅ added batch
+          .select('full_name, department, avatar_url, batch')
           .eq('id', user.id)
           .maybeSingle();
 
       if (res != null) {
         nameController.text = (res['full_name'] ?? '').toString();
         deptController.text = (res['department'] ?? '').toString();
-        batchController.text = (res['batch'] ?? '').toString(); // ✅ load batch
+        batchController.text = (res['batch'] ?? '').toString();
       }
     } catch (e) {
       debugPrint("loadProfile error: $e");
@@ -58,7 +56,6 @@ class _BasicInfoState extends State<BasicInfo> {
     }
   }
 
-  /// ---------------- PICK IMAGE ----------------
   Future<void> pickImage() async {
     final picker = ImagePicker();
     final file = await picker.pickImage(source: ImageSource.gallery);
@@ -69,7 +66,6 @@ class _BasicInfoState extends State<BasicInfo> {
     }
   }
 
-  /// ---------------- UPLOAD IMAGE ----------------
   Future<String?> uploadImage() async {
     if (pickedFile == null || imageBytes == null) return null;
 
@@ -95,7 +91,6 @@ class _BasicInfoState extends State<BasicInfo> {
     }
   }
 
-  /// ---------------- SAVE DATA ----------------
   Future<void> submitData() async {
     try {
       setState(() => loading = true);
@@ -151,7 +146,6 @@ class _BasicInfoState extends State<BasicInfo> {
     super.dispose();
   }
 
-  /// ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -164,7 +158,6 @@ class _BasicInfoState extends State<BasicInfo> {
                 children: [
                   const SizedBox(height: 20),
 
-                  /// Avatar
                   Stack(
                     children: [
                       CircleAvatar(
